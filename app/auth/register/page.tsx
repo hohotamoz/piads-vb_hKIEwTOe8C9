@@ -62,7 +62,7 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout>
-      <div className="w-full max-w-sm animate-slide-up">
+      <div className="w-full max-w-sm animate-slide-up mx-auto px-4">
         {/* Title */}
         <h1 className="text-2xl font-bold text-foreground text-center mb-8 tracking-widest-custom uppercase">
           Create an Account

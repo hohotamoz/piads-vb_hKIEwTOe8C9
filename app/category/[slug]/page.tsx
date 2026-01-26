@@ -7,8 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, SlidersHorizontal, Star, MapPin, TrendingUp, Smartphone, Wrench, Shirt, MouseIcon as HouseIcon, Car, Briefcase } from "lucide-react"
 import Link from "next/link"
 import { getAds } from "@/lib/database"
-import { Ad } from "@/types/ad" // Import Ad type
-import { getAllAds } from "@/lib/ads" // Import getAllAds function
 
 const categoryIcons = {
   electronics: Smartphone,
@@ -25,7 +23,7 @@ export default function CategoryPage() {
   const router = useRouter()
   const categorySlug = params.slug as string
   const categoryName = categorySlug.replace(/-/g, " ")
-  
+
   const [categoryAds, setCategoryAds] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -94,9 +92,9 @@ export default function CategoryPage() {
       </header>
 
       {/* Content */}
-      <main className="px-4 mt-4">
+      <main className="container mx-auto px-4 mt-4">
         {categoryAds.length === 0 ? (
-          <Card>
+          <Card className="max-w-md mx-auto">
             <CardContent className="text-center py-12">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <IconComponent className="w-8 h-8 text-slate-400" />
@@ -112,46 +110,41 @@ export default function CategoryPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {categoryAds.map((ad) => (
               <Link key={ad.id} href={`/ad/${ad.id}`}>
-                <Card className="cursor-pointer hover:shadow-md transition-all border-slate-200 overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="flex">
-                      <div className="relative w-28 h-28 flex-shrink-0">
-                        <img
-                          src={ad.images[0] || "/placeholder.svg"}
-                          alt={ad.title}
-                          className="w-full h-full object-cover"
-                        />
-                        {ad.is_promoted && (
-                          <Badge className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white text-xs px-2">
-                            <Star className="w-2.5 h-2.5 mr-0.5" />
-                            Featured
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex-1 p-3 min-w-0">
-                        <div className="flex items-start justify-between mb-1">
-                          <h3 className="font-semibold text-slate-900 text-sm leading-tight truncate pr-2">
-                            {ad.title}
-                          </h3>
-                          {ad.is_promoted && <TrendingUp className="w-4 h-4 text-emerald-600 flex-shrink-0" />}
-                        </div>
-                        <div className="flex items-center space-x-1 mb-2">
+                <Card className="cursor-pointer hover:shadow-lg transition-all border-slate-200 overflow-hidden h-full flex flex-col">
+                  <div className="relative pt-[75%]">
+                    <img
+                      src={ad.images[0] || "/placeholder.svg"}
+                      alt={ad.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    {ad.is_promoted && (
+                      <Badge className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white text-xs px-2">
+                        <Star className="w-2.5 h-2.5 mr-0.5" />
+                        Featured
+                      </Badge>
+                    )}
+                  </div>
+                  <CardContent className="p-3 flex-1 flex flex-col">
+                    <h3 className="font-semibold text-slate-900 text-sm leading-tight line-clamp-2 mb-1 flex-1">
+                      {ad.title}
+                    </h3>
+
+                    <div className="flex items-center justify-between mt-auto mb-2">
+                      <span className="font-bold text-emerald-600 text-sm">{ad.price} π</span>
+                      {ad.rating && (
+                        <div className="flex items-center space-x-1">
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          <span className="text-xs text-slate-600 font-medium">4.5</span>
-                          <span className="text-xs text-slate-400">•</span>
-                          <span className="text-xs text-slate-600">{ad.views || 0} views</span>
+                          <span className="text-xs text-slate-600 font-medium">{ad.rating}</span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-1 min-w-0">
-                            <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                            <span className="text-xs text-slate-500 truncate">{ad.region}</span>
-                          </div>
-                          <span className="font-bold text-emerald-600 text-sm ml-2 flex-shrink-0">{ad.price} π</span>
-                        </div>
-                      </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-1 min-w-0 text-xs text-slate-500">
+                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{ad.region}</span>
                     </div>
                   </CardContent>
                 </Card>

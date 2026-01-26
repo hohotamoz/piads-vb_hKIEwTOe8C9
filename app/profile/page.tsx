@@ -149,7 +149,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <div className="p-4 pb-20">
+      <div className="container max-w-4xl mx-auto p-4 pb-20">
         {/* Profile Card */}
         <Card className="mb-6 border shadow-lg bg-card">
           <CardContent className="p-6">
@@ -193,159 +193,163 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Wallet Card */}
-        <Card className="mb-6 border-0 shadow-lg bg-gradient-to-br from-primary to-[#312E81]">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-amber-400/20 rounded-xl flex items-center justify-center">
-                <Wallet className="w-6 h-6 text-amber-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-white/70">Pi Network Balance</p>
-                <h2 className="text-3xl font-bold text-white">{userData?.credits_balance?.toFixed(2) || "0.00"} π</h2>
-              </div>
-            </div>
-            {userData && isAuthenticated ? (
-              <div className="bg-white/10 rounded-lg p-3 mb-3">
-                <p className="text-xs text-white/60 mb-1">Connected Account</p>
-                <p className="text-sm text-white font-mono">@{userData.username}</p>
-              </div>
-            ) : (
-              <Button
-                onClick={() => reinitialize()}
-                className="w-full bg-amber-400 text-foreground hover:bg-amber-500 font-semibold mb-3 dark:text-black"
-              >
-                Connect Pi Network
-              </Button>
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Wallet Card - Takes full width on mobile, half on desktop */}
+          <div className="md:col-span-2">
+            <Card className="mb-6 border-0 shadow-lg bg-gradient-to-br from-primary to-[#312E81]">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-12 h-12 bg-amber-400/20 rounded-xl flex items-center justify-center">
+                    <Wallet className="w-6 h-6 text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white/70">Pi Network Balance</p>
+                    <h2 className="text-3xl font-bold text-white">{userData?.credits_balance?.toFixed(2) || "0.00"} π</h2>
+                  </div>
+                </div>
+                {userData && isAuthenticated ? (
+                  <div className="bg-white/10 rounded-lg p-3 mb-3">
+                    <p className="text-xs text-white/60 mb-1">Connected Account</p>
+                    <p className="text-sm text-white font-mono">@{userData.username}</p>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => reinitialize()}
+                    className="w-full bg-amber-400 text-foreground hover:bg-amber-500 font-semibold mb-3 dark:text-black"
+                  >
+                    Connect Pi Network
+                  </Button>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Link href="/wallet" className="block">
+                    <Button variant="secondary" className="w-full bg-white/20 hover:bg-white/30 text-white border-0">
+                      <Wallet className="w-4 h-4 mr-2" />
+                      Wallet
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={() => setIsSubscriptionDialogOpen(true)}
+                    variant="secondary"
+                    className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
+                  >
+                    <Crown className="w-4 h-4 mr-2" />
+                    Subscribe
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Menu Items Grid */}
+          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+            {user.role === "admin" && (
+              <Link href="/admin">
+                <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card h-full">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-red-50 dark:bg-red-900/10 rounded-xl flex items-center justify-center">
+                        <Crown className="w-5 h-5 text-red-600 dark:text-red-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Admin Dashboard</p>
+                        <p className="text-xs text-muted-foreground">Manage platform</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <Link href="/wallet" className="block">
-                <Button variant="secondary" className="w-full bg-white/20 hover:bg-white/30 text-white border-0">
-                  <Wallet className="w-4 h-4 mr-2" />
-                  Wallet
-                </Button>
-              </Link>
-              <Button
-                onClick={() => setIsSubscriptionDialogOpen(true)}
-                variant="secondary"
-                className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
-              >
-                <Crown className="w-4 h-4 mr-2" />
-                Subscribe
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Menu Items */}
-        <div className="space-y-3">
-          {user.role === "admin" && (
-            <Link href="/admin">
-              <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card">
+            <Link href="/my-ads">
+              <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card h-full">
                 <CardContent className="p-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-red-50 dark:bg-red-900/10 rounded-xl flex items-center justify-center">
-                      <Crown className="w-5 h-5 text-red-600 dark:text-red-500" />
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <ShoppingBag className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-foreground">Admin Dashboard</p>
-                      <p className="text-xs text-muted-foreground">Manage platform</p>
+                      <p className="text-sm font-medium text-foreground">My Ads</p>
+                      <p className="text-xs text-muted-foreground">View and manage your ads</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </Link>
-          )}
 
-          <Link href="/my-ads">
-            <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                    <ShoppingBag className="w-5 h-5 text-primary" />
+            <Link href="/reviews">
+              <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card h-full">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/10 rounded-xl flex items-center justify-center">
+                      <Star className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Reviews & Ratings</p>
+                      <p className="text-xs text-muted-foreground">Manage your feedback</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">My Ads</p>
-                    <p className="text-xs text-muted-foreground">View and manage your ads</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
 
-          <Link href="/reviews">
-            <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/10 rounded-xl flex items-center justify-center">
-                    <Star className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+            <Link href="/messages">
+              <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card h-full">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <MessageSquare className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Messages</p>
+                      <p className="text-xs text-muted-foreground">Chat with buyers/sellers</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Reviews & Ratings</p>
-                    <p className="text-xs text-muted-foreground">Manage your feedback</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
 
-          <Link href="/messages">
-            <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5 text-primary" />
+            <Link href="/notifications">
+              <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card h-full">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <Bell className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Notifications</p>
+                      <p className="text-xs text-muted-foreground">Manage alerts</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Messages</p>
-                    <p className="text-xs text-muted-foreground">Chat with buyers/sellers</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
 
-          <Link href="/notifications">
-            <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-primary" />
+            <Link href="/settings">
+              <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card h-full">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <Settings className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Settings</p>
+                      <p className="text-xs text-muted-foreground">Account preferences</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Notifications</p>
-                    <p className="text-xs text-muted-foreground">Manage alerts</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
 
-          <Link href="/settings">
-            <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-all bg-card">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                    <Settings className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Settings</p>
-                    <p className="text-xs text-muted-foreground">Account preferences</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="w-full border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:bg-red-950/10 dark:hover:bg-red-900/20 dark:text-red-500 bg-card"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="w-full h-auto py-4 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:bg-red-950/10 dark:hover:bg-red-900/20 dark:text-red-500 bg-card md:col-span-2"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </div>
 

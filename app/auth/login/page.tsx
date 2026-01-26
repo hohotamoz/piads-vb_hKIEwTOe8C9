@@ -71,7 +71,7 @@ export default function LoginPage() {
 
   return (
     <AuthLayout variant="dark">
-      <div className="w-full max-w-sm animate-slide-up">
+      <div className="w-full max-w-sm animate-slide-up mx-auto px-4">
         {/* Title */}
         <h1 className="text-2xl font-bold text-white text-center mb-8 tracking-widest-custom uppercase">
           Welcome Back
