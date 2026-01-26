@@ -110,7 +110,7 @@ export default function MessagesPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-gradient-to-r from-primary to-[#312E81] sticky top-0 z-50 shadow-lg">
-        <div className="px-4 py-4">
+        <div className="container mx-auto px-4 py-4 max-w-5xl">
           <div className="flex items-center space-x-3">
             {selectedConversation ? (
               <Button
@@ -189,7 +189,7 @@ export default function MessagesPage() {
 
       {!selectedConversation ? (
         /* Conversations List */
-        <div className="pb-20">
+        <div className="container mx-auto px-4 pb-20 max-w-5xl">
           {conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-4">
               <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
@@ -253,7 +253,7 @@ export default function MessagesPage() {
         </div>
       ) : (
         /* Chat View */
-        <div className="flex flex-col h-[calc(100vh-140px)]">
+        <div className="container mx-auto max-w-5xl flex flex-col h-[calc(100vh-140px)]">
           {/* Ad Context */}
           {selectedConversation.adTitle && (
             <div className="bg-primary/5 border-b border-border px-4 py-3 shadow-sm">

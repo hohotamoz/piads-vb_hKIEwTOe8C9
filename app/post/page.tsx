@@ -36,7 +36,7 @@ export default function PostAdPage() {
   const { user } = useAuth()
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -45,7 +45,7 @@ export default function PostAdPage() {
     region: "",
     images: [] as string[],
   })
-  
+
   const [isUploading, setIsUploading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -80,7 +80,7 @@ export default function PostAdPage() {
           }
 
           const result = await uploadImage(file)
-          
+
           if (result.success && result.url) {
             newImages.push(result.url)
           } else {
@@ -141,7 +141,7 @@ export default function PostAdPage() {
 
     try {
       console.log("[v0] Starting ad submission process...")
-      
+
       // Check subscription limits from database
       console.log("[v0] Checking user ad limits...")
       const userAds = await getUserAds(user.id)
@@ -149,16 +149,16 @@ export default function PostAdPage() {
       const adLimit = getUserAdLimit(user.id)
       const subscription = getUserSubscription(user.id)
 
-      console.log("[v0] User ad stats:", { 
-        totalAds: userAds.length, 
-        activeAds: activeAds.length, 
-        adLimit 
+      console.log("[v0] User ad stats:", {
+        totalAds: userAds.length,
+        activeAds: activeAds.length,
+        adLimit
       })
 
       // Check if user can post more ads
       if (adLimit !== -1 && activeAds.length >= adLimit) {
         toast.error(
-          subscription 
+          subscription
             ? `You've reached your ad limit (${adLimit} ads). Upgrade to post more ads!`
             : `You've reached your free limit (${adLimit} ads). Subscribe to post more!`,
           {
@@ -200,17 +200,17 @@ export default function PostAdPage() {
 
       console.log("[v0] Ad created successfully:", newAd.id)
       toast.success("Ad posted successfully!")
-      
+
       // Redirect to the new ad
       setTimeout(() => {
         router.push(`/ad/${newAd.id}`)
       }, 1000)
     } catch (error: any) {
       console.error("[v0] Error posting ad:", error)
-      
+
       // Provide more specific error messages
       let errorMessage = "Failed to post ad. Please try again."
-      
+
       if (error?.message) {
         if (error.message.includes("not configured")) {
           errorMessage = "Database connection error. Please contact support."
@@ -222,7 +222,7 @@ export default function PostAdPage() {
           errorMessage = error.message
         }
       }
-      
+
       toast.error(errorMessage, { duration: 5000 })
     } finally {
       setIsSubmitting(false)
@@ -252,7 +252,7 @@ export default function PostAdPage() {
       </header>
 
       {/* Form */}
-      <main className="p-4 pb-20">
+      <main className="container mx-auto px-4 pb-20 max-w-3xl">
         <Card className="border-0 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-xl">
             <CardTitle className="text-lg font-bold text-slate-900">Create Your Ad</CardTitle>
@@ -265,7 +265,7 @@ export default function PostAdPage() {
                 Photos <span className="text-red-500">*</span>
               </Label>
               <p className="text-xs text-slate-500 mb-3">Upload up to 6 photos (Max 5MB each)</p>
-              
+
               <div className="grid grid-cols-3 gap-3 mb-3">
                 {formData.images.map((image, index) => (
                   <div key={index} className="relative group">
@@ -284,7 +284,7 @@ export default function PostAdPage() {
                     </Button>
                   </div>
                 ))}
-                
+
                 {formData.images.length < 6 && (
                   <button
                     type="button"
@@ -306,7 +306,7 @@ export default function PostAdPage() {
                   </button>
                 )}
               </div>
-              
+
               <input
                 ref={fileInputRef}
                 type="file"

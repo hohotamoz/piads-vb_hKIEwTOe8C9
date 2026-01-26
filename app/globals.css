@@ -109,22 +109,16 @@
 
   @media (min-width: 768px) {
     .app-container {
-      max-width: 768px;
+      max-width: 100%;
     }
 
     body {
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      background: hsl(var(--muted) / 0.3);
+      background: hsl(var(--background));
     }
 
     #__next {
       width: 100%;
-      max-width: 768px;
-      background: hsl(var(--background));
-      min-height: 100vh;
-      box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
+      max-width: 100%;
     }
   }
 }
