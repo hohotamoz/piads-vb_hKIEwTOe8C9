@@ -242,8 +242,4 @@ class RealtimeMessagingService {
     return Promise.resolve(0)
   }
 
-  // Helper to maintain signature compatibility where needed, 
-  // but ultimately the UI needs to handle Promises.
-  // We will fix the UI components next.
-
   export const realtimeMessaging = new RealtimeMessagingService()
