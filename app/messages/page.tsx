@@ -59,6 +59,12 @@ export default function MessagesPage() {
       setMessages(updatedMessages)
     })
 
+    // Polling fallback to ensure reliability
+    const intervalId = setInterval(async () => {
+      const msgs = await realtimeMessaging.getMessages(selectedChat)
+      setMessages(msgs)
+    }, 5000)
+
     if (user) {
       realtimeMessaging.markAsRead(selectedChat, user.id)
       realtimeMessaging.getConversations(user.id).then(setConversations)
@@ -66,6 +72,7 @@ export default function MessagesPage() {
 
     return () => {
       unsubscribe()
+      clearInterval(intervalId)
     }
   }, [selectedChat, user])
 
