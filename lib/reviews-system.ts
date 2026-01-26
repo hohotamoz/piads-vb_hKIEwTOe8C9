@@ -149,6 +149,41 @@ class ReviewsSystem {
 
     return (count || 0) > 0
   }
+
+  async getReceivedReviews(userId: string): Promise<Review[]> {
+    if (!isSupabaseConfigured) return []
+    try {
+      // Fetch reviews where the ad belongs to the user
+      // We need to join with ads table
+      const { data, error } = await supabase
+        .from("reviews")
+        .select(`
+            *,
+            ad:ads!inner(user_id, title),
+            reviewer:profiles!reviewer_id(name, avatar)
+        `)
+        .eq("ad.user_id", userId)
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+
+      return data.map((r: any) => ({
+        id: r.id,
+        adId: r.ad_id,
+        adTitle: r.ad?.title, // Add title to review type if needed or handle it
+        userId: r.reviewer_id,
+        userName: r.reviewer?.name || "Anonymous",
+        userAvatar: r.reviewer?.avatar,
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: new Date(r.created_at),
+        verified: true
+      }))
+    } catch (e) {
+      console.error("Error fetching received reviews", e)
+      return []
+    }
+  }
 }
 
 export const reviewsSystem = new ReviewsSystem()

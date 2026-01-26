@@ -64,7 +64,7 @@ export default function AdDetailPage() {
         await incrementAdViews(adId)
 
         // Load reviews
-        const adReviews = await getAdReviews(adId)
+        const adReviews = await reviewsSystem.getAdReviews(adId)
         setReviews(adReviews)
       }
     } catch (error) {
