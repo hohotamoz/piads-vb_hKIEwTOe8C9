@@ -4,36 +4,37 @@
 interface StoredAd { id: string } // Minimal stub
 
 export function createAdFallback(ad: any): any {
-  console.error("CRITICAL: Attempted to use disabled fallback storage for Ad creation.")
+  // Use 'ad' in error message to satisfy linter if needed, or just throw
+  console.error("CRITICAL: Disabled fallback storage. Ad not created.", ad)
   throw new Error("Local storage is disabled. Please connect to the internet.")
 }
 
-export function getAdsFallback(filters?: any): any[] {
+export function getAdsFallback(_filters?: any): any[] {
   console.warn("Attempted to read ads from disabled fallback storage.")
   return []
 }
 
-export function searchAdsFallback(query: string): any[] {
+export function searchAdsFallback(_query: string): any[] {
   return []
 }
 
-export function getAdByIdFallback(id: string): any {
+export function getAdByIdFallback(_id: string): any {
   return null
 }
 
-export function getUserAdsFallback(userId: string): any[] {
+export function getUserAdsFallback(_userId: string): any[] {
   return []
 }
 
-export function updateAdFallback(id: string, updates: any): any {
+export function updateAdFallback(_id: string, _updates: any): any {
   return null
 }
 
-export function deleteAdFallback(id: string): boolean {
+export function deleteAdFallback(_id: string): boolean {
   return false
 }
 
-export function incrementViewsFallback(id: string): void {
+export function incrementViewsFallback(_id: string): void {
   // No-op
 }
 
@@ -46,40 +47,40 @@ export function getStorageInfo(): { mode: string; adsCount: number } {
 }
 
 // Reviews Fallback (Disabled)
-export function createReviewFallback(review: any): any {
+export function createReviewFallback(_review: any): any {
   console.error("Local reviews disabled.")
   throw new Error("Local storage is disabled.")
 }
 
-export function getAdReviewsFallback(adId: string): any[] {
+export function getAdReviewsFallback(_adId: string): any[] {
   return []
 }
 
 // Messages Fallback (Disabled)
-export function createMessageFallback(message: any): any {
+export function createMessageFallback(_message: any): any {
   console.error("Local messages disabled.")
   throw new Error("Local storage is disabled.")
 }
 
-export function getUserMessagesFallback(userId: string): any[] {
+export function getUserMessagesFallback(_userId: string): any[] {
   return []
 }
 
-export function getConversationFallback(adId: string, userId: string, otherUserId: string): any[] {
+export function getConversationFallback(_adId: string, _userId: string, _otherUserId: string): any[] {
   return []
 }
 
-export function markMessageAsReadFallback(messageId: string): void { }
+export function markMessageAsReadFallback(_messageId: string): void { }
 
 // Notifications Fallback (Disabled)
-export function createNotificationFallback(notif: any): any {
+export function createNotificationFallback(_notif: any): any {
   return null
 }
 
-export function getUserNotificationsFallback(userId: string): any[] {
+export function getUserNotificationsFallback(_userId: string): any[] {
   return []
 }
 
-export function markNotificationAsReadFallback(id: string): void { }
+export function markNotificationAsReadFallback(_id: string): void { }
 
-export function markAllNotificationsAsReadFallback(userId: string): void { }
+export function markAllNotificationsAsReadFallback(_userId: string): void { }
