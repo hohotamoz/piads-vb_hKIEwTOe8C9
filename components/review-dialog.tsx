@@ -47,7 +47,7 @@ export function ReviewDialog({
 
     setIsSubmitting(true)
     try {
-      reviewsSystem.addReview(
+      const result = await reviewsSystem.addReview(
         adId,
         userId,
         userName,
@@ -57,14 +57,19 @@ export function ReviewDialog({
         true
       )
 
-      toast.success("Review posted successfully!")
-      onReviewAdded()
-      onClose()
-      setRating(5)
-      setComment("")
-    } catch (error) {
+      if (result) {
+        toast.success("Review posted successfully!")
+        onReviewAdded()
+        onClose()
+        setRating(5)
+        setComment("")
+      } else {
+        throw new Error("Failed to save review")
+      }
+    } catch (error: any) {
       console.error("Failed to post review:", error)
-      toast.error("Failed to post review. Please try again.")
+      // Show more specific error if available
+      toast.error(error.message || "Failed to post review. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -95,11 +100,10 @@ export function ReviewDialog({
                   className="transition-transform hover:scale-110"
                 >
                   <Star
-                    className={`w-8 h-8 ${
-                      star <= (hoveredRating || rating)
+                    className={`w-8 h-8 ${star <= (hoveredRating || rating)
                         ? "fill-yellow-400 text-yellow-400"
                         : "text-slate-300"
-                    }`}
+                      }`}
                   />
                 </button>
               ))}

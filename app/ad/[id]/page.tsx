@@ -50,6 +50,9 @@ export default function AdDetailPage() {
     loadAdData()
   }, [params.id])
 
+  // State for ratings
+  const [ratingStats, setRatingStats] = useState({ average: 0, count: 0 })
+
   const loadAdData = async () => {
     try {
       setIsLoading(true)
@@ -66,6 +69,10 @@ export default function AdDetailPage() {
         // Load reviews
         const adReviews = await reviewsSystem.getAdReviews(adId)
         setReviews(adReviews)
+
+        // Load average rating
+        const stats = await reviewsSystem.getAdAverageRating(adId)
+        setRatingStats(stats)
       }
     } catch (error) {
       console.error("Error loading ad:", error)
@@ -184,7 +191,7 @@ export default function AdDetailPage() {
     setCurrentImageIndex((prev) => (prev - 1 + ad.images.length) % ad.images.length)
   }
 
-  const { average: avgRating, count: reviewCount } = reviewsSystem.getAdAverageRating(ad.id)
+  const { average: avgRating, count: reviewCount } = ratingStats
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-24">
