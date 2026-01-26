@@ -236,6 +236,84 @@ class RealtimeMessagingService {
     }
   }
 
+  async createConversation(participantIds: string[], adId?: string, adTitle?: string): Promise<Conversation> {
+    // Generate unique conversation ID based on Ad and Participants
+    // Current logic assumes [Buyer, Seller]
+    // Consistently order participants? No, conversation ID logic in getConversations uses:
+    // const partnerId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id
+    // const convId = `${msg.ad_id}_${partnerId}`
+    // So the ID is relative to the viewer? 
+    // Actually, `convId` calculation in `getConversations` effectively makes 2 different IDs for the same conversation depending on who views it 
+    // (if `partnerId` is dynamic).
+    // Let's look at `getConversations`:
+    // const partnerId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id
+    // const convId = `${msg.ad_id}_${partnerId}`
+    // If I am Buyer (U1) talking to Seller (U2) on Ad (A1).
+    // Msg: Sender=U1, Receiver=U2. 
+    // My View (UserId=U1): Partner=U2. ID = A1_U2.
+    // Seller View (UserId=U2): Partner=U1. ID = A1_U1.
+    // THIS IS A MISMATCH! One conversation physically, but 2 different logical IDs?
+    // This explains why they don't see each other's messages if we use this ID to filter?
+    // Wait, `getMessages` uses `ad_id` and `or(sender=partner, receiver=partner)`.
+    // It takes `conversationId` as input and parses `adId_partnerId`.
+    // If I am U1, I request `A1_U2`. `getMessages` queries `ad_id=A1` AND `(sender=U2 OR receiver=U2)`.
+    // This finds messages where U2 is involved. 
+    // But what about messages I sent (sender=U1, receiver=U2)? 
+    // My query: `sender=U2` (False) OR `receiver=U2` (True). So it MATCHES. 
+    // So `getMessages` logic works even with relative IDs.
+
+    // HOWEVER, `createConversation` needs to return the ID relevant to the *CURRENT USER* (Buyer).
+    // user.id is usually the first participant in the array passed from UI or we should find which one is "me".
+    // But `createConversation` doesn't know who "me" is explicitly unless we pass it.
+    // `participantIds` usually [me, other].
+    // Let's assume the caller passes [currentUser, otherUser].
+
+    // We need to return the ID that the *caller* will use to view the chat.
+    // So ID = `${adId}_${otherUser}`.
+
+    const currentUser = participantIds[0]
+    const otherUser = participantIds[1]
+    const conversationId = `${adId}_${otherUser}`
+
+    if (!isSupabaseConfigured) {
+      // Mock return
+      return {
+        id: conversationId,
+        participants: participantIds,
+        lastMessage: null,
+        unreadCount: 0,
+        adId,
+        adTitle,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    }
+
+    // Check if conversation actually has messages
+    const msgs = await this.getMessages(conversationId)
+    if (msgs.length === 0) {
+      // Auto-send "Hi, is this available?" to persist it
+      await this.sendMessage({
+        conversationId,
+        senderId: currentUser,
+        receiverId: otherUser,
+        text: "Hi, is this available?",
+        adId
+      })
+    }
+
+    return {
+      id: conversationId,
+      participants: participantIds,
+      lastMessage: null, // Will be populated on refresh
+      unreadCount: 0,
+      adId,
+      adTitle,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  }
+
   getUnreadCount(userId: string): Promise<number> {
     // This would be async now.
     // For now return 0 or implement a separate count query.
