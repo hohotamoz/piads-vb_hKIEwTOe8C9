@@ -28,37 +28,45 @@ export default function MessagesPage() {
       return
     }
 
-    try {
-      const userConversations = realtimeMessaging.getConversations(user.id)
-      setConversations(userConversations)
+    const loadConversations = async () => {
+      try {
+        const userConversations = await realtimeMessaging.getConversations(user.id)
+        setConversations(userConversations)
 
-      if (typeof window !== "undefined") {
-        const activeConvId = sessionStorage.getItem("activeConversation")
-        if (activeConvId) {
-          setSelectedChat(activeConvId)
-          sessionStorage.removeItem("activeConversation")
+        if (typeof window !== "undefined") {
+          const activeConvId = sessionStorage.getItem("activeConversation")
+          if (activeConvId) {
+            setSelectedChat(activeConvId)
+            sessionStorage.removeItem("activeConversation")
+          }
         }
+      } catch (error) {
+        console.error("Error loading conversations", error)
+        setConversations([])
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      setConversations([])
-    } finally {
-      setIsLoading(false)
     }
+
+    loadConversations()
   }, [user, authLoading, router])
 
   useEffect(() => {
     if (!selectedChat) return
 
+    // Subscribe and getting unsubscribe function
     const unsubscribe = realtimeMessaging.subscribeToConversation(selectedChat, (updatedMessages) => {
       setMessages(updatedMessages)
     })
 
     if (user) {
       realtimeMessaging.markAsRead(selectedChat, user.id)
-      setConversations(realtimeMessaging.getConversations(user.id))
+      realtimeMessaging.getConversations(user.id).then(setConversations)
     }
 
-    return () => unsubscribe()
+    return () => {
+      unsubscribe()
+    }
   }, [selectedChat, user])
 
   if (authLoading || isLoading) {
@@ -76,20 +84,29 @@ export default function MessagesPage() {
 
   const selectedConversation = conversations.find((c) => c.id === selectedChat)
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!messageText.trim() || !selectedChat || !user) return
 
     const otherParticipant = selectedConversation?.participants.find((p) => p !== user.id)
     if (!otherParticipant) return
 
-    realtimeMessaging.sendMessage({
-      conversationId: selectedChat,
-      senderId: user.id,
-      receiverId: otherParticipant,
-      text: messageText,
-    })
+    try {
+      await realtimeMessaging.sendMessage({
+        conversationId: selectedChat,
+        senderId: user.id,
+        receiverId: otherParticipant,
+        text: messageText,
+        // We pass adId if we have it in the conversation context
+        adId: selectedConversation?.adId
+      })
 
-    setMessageText("")
+      setMessageText("")
+      // Refresh conversations to update last message snippet
+      const updatedConvs = await realtimeMessaging.getConversations(user.id)
+      setConversations(updatedConvs)
+    } catch (e) {
+      console.error("Failed to send message", e)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
