@@ -11,8 +11,6 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { getUserAds, deleteAd, updateAd } from "@/lib/database"
 import { toast } from "sonner"
-import { Ad } from "@/types" // Import Ad type
-import { getAllAds, updateAdStatus } from "@/lib/ad-utils" // Import getAllAds and updateAdStatus functions
 
 export default function MyAdsPage() {
   const { user } = useAuth()
@@ -130,9 +128,9 @@ export default function MyAdsPage() {
         </div>
       </header>
 
-      <div className="p-4 pb-20">
+      <div className="container mx-auto px-4 pb-20 max-w-6xl">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           <Card className="border-0 shadow-sm">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-emerald-600">{activeAds.length}</p>
@@ -155,13 +153,13 @@ export default function MyAdsPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="paused">Paused</TabsTrigger>
             <TabsTrigger value="sold">Sold</TabsTrigger>
           </TabsList>
 
-          <TabsContent value={activeTab} className="space-y-3 mt-0">
+          <TabsContent value={activeTab} className="mt-0">
             {currentAds.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-12">
@@ -179,98 +177,93 @@ export default function MyAdsPage() {
                 </CardContent>
               </Card>
             ) : (
-              currentAds.map((ad) => (
-                <Card key={ad.id} className="border-0 shadow-sm hover:shadow-md transition-all">
-                  <CardContent className="p-0">
-                    <Link href={`/ad/${ad.id}`}>
-                      <div className="flex cursor-pointer">
-                        <img
-                          src={ad.images[0] || "/placeholder.svg"}
-                          alt={ad.title}
-                          className="w-24 h-24 object-cover rounded-l-lg"
-                        />
-                        <div className="flex-1 p-3">
-                          <div className="flex items-start justify-between mb-1">
-                            <h3 className="font-medium text-slate-900 text-sm leading-tight flex-1">{ad.title}</h3>
-                            {ad.featured && (
-                              <Badge className="ml-2 bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white text-xs">
-                                Featured
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center space-x-1 mb-2">
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                            <span className="text-xs text-slate-600 font-medium">{ad.rating}</span>
-                            <span className="text-xs text-slate-400">•</span>
-                            <Eye className="w-3 h-3 text-slate-400" />
-                            <span className="text-xs text-slate-600">{ad.views}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-emerald-600 text-sm">{ad.price} π</span>
-                            <div className="flex items-center space-x-1">
-                              <MapPin className="w-3 h-3 text-slate-400" />
-                              <span className="text-xs text-slate-500">{ad.location}</span>
-                            </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {currentAds.map((ad) => (
+                  <Card key={ad.id} className="border-0 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col h-full">
+                    <Link href={`/ad/${ad.id}`} className="block relative pt-[60%]">
+                      <img
+                        src={ad.images[0] || "/placeholder.svg"}
+                        alt={ad.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      {ad.featured && (
+                        <Badge className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white text-xs">
+                          Featured
+                        </Badge>
+                      )}
+                    </Link>
+                    <CardContent className="p-3 flex-1 flex flex-col">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-1">
+                          <h3 className="font-medium text-slate-900 text-sm leading-tight line-clamp-2 md:line-clamp-1">{ad.title}</h3>
+                        </div>
+                        <div className="flex items-center space-x-1 mb-2">
+                          <span className="text-xs text-slate-600 font-medium">{ad.rating || 4.5}</span>
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          <span className="text-xs text-slate-400">•</span>
+                          <Eye className="w-3 h-3 text-slate-400" />
+                          <span className="text-xs text-slate-600">{ad.views}</span>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-emerald-600 text-sm">{ad.price} π</span>
+                          <div className="flex items-center space-x-1 text-xs text-slate-500 truncate max-w-[50%]">
+                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate">{ad.location}</span>
                           </div>
                         </div>
                       </div>
-                    </Link>
-                    <div className="border-t border-slate-100 p-2 flex space-x-2">
-                      <Link href={`/post?edit=${ad.id}`} className="flex-1">
-                        <Button variant="ghost" size="sm" className="w-full text-xs">
-                          <Edit className="w-3 h-3 mr-1" />
-                          Edit
-                        </Button>
-                      </Link>
-                      {activeTab === "active" && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="flex-1 text-xs"
+
+                      <div className="border-t border-slate-100 pt-2 flex space-x-1 justify-between">
+                        <Link href={`/post?edit=${ad.id}`} className="flex-1">
+                          <Button variant="ghost" size="sm" className="w-full text-xs h-8 px-1">
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                        </Link>
+                        {activeTab === "active" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex-1 text-xs h-8 px-1"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handlePauseAd(ad.id)
+                            }}
+                          >
+                            <PauseCircle className="w-3 h-3 mr-1" />
+                            Pause
+                          </Button>
+                        )}
+                        {activeTab === "paused" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex-1 text-xs h-8 px-1"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleActivateAd(ad.id)
+                            }}
+                          >
+                            <PlayCircle className="w-3 h-3 mr-1" />
+                            Active
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 px-2"
                           onClick={(e) => {
                             e.preventDefault()
-                            handlePauseAd(ad.id)
+                            handleDeleteAd(ad.id)
                           }}
                         >
-                          <PauseCircle className="w-3 h-3 mr-1" />
-                          Pause
+                          <Trash2 className="w-3 h-3" />
                         </Button>
-                      )}
-                      {activeTab === "paused" && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="flex-1 text-xs"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            handleActivateAd(ad.id)
-                          }}
-                        >
-                          <PlayCircle className="w-3 h-3 mr-1" />
-                          Activate
-                        </Button>
-                      )}
-                      <Link href="/promote" className="flex-1">
-                        <Button variant="ghost" size="sm" className="w-full text-xs">
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                          Promote
-                        </Button>
-                      </Link>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          handleDeleteAd(ad.id)
-                        }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </TabsContent>
         </Tabs>

@@ -43,13 +43,13 @@ export default function SearchPage() {
     try {
       setIsLoading(true)
       const allAds = await getAds({ status: 'active' })
-      
+
       // Filter by search query
-      const filtered = allAds.filter(ad => 
+      const filtered = allAds.filter(ad =>
         ad.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ad.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      
+
       setSearchResults(filtered)
     } catch (error) {
       console.error("Error searching ads:", error)
@@ -261,7 +261,7 @@ export default function SearchPage() {
         </div>
       </header>
 
-      <div className="p-4 pb-24">
+      <div className="container mx-auto px-4 pb-24 max-w-7xl">
         {hasSearched && activeFiltersCount > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {selectedCategories.map((cat) => (
@@ -300,7 +300,7 @@ export default function SearchPage() {
         )}
 
         {!hasSearched ? (
-          <div className="space-y-6">
+          <div className="space-y-6 max-w-3xl mx-auto">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 mb-3">Popular Searches</h2>
               <div className="flex flex-wrap gap-2">
@@ -360,7 +360,7 @@ export default function SearchPage() {
             </div>
 
             {filteredResults.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="text-center py-12 max-w-md mx-auto">
                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Search className="w-8 h-8 text-slate-400" />
                 </div>
@@ -375,45 +375,36 @@ export default function SearchPage() {
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {filteredResults.map((ad) => (
                   <Link key={ad.id} href={`/ad/${ad.id}`}>
-                    <Card className="cursor-pointer hover:shadow-md transition-all border-slate-200 overflow-hidden">
-                      <CardContent className="p-0">
-                        <div className="flex">
-                          <div className="relative w-28 h-28 flex-shrink-0">
-                            <img
-                              src={ad.images[0] || "/placeholder.svg"}
-                              alt={ad.title}
-                              className="w-full h-full object-cover"
-                            />
-                            {ad.is_promoted && (
-                              <Badge className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white text-xs">
-                                Featured
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex-1 p-3">
-                            <div className="flex items-start justify-between mb-1">
-                              <h3 className="font-medium text-slate-900 text-sm leading-tight pr-2">{ad.title}</h3>
-                            </div>
-                            <div className="flex items-center space-x-1 mb-2">
-                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                              <span className="text-xs text-slate-600 font-medium">4.5</span>
-                              <span className="text-xs text-slate-400">•</span>
-                              <span className="text-xs text-slate-600">{ad.views || 0} views</span>
-                            </div>
-                            <Badge variant="secondary" className="text-xs mb-2 bg-slate-100 text-slate-700 border-0">
-                              {ad.category}
-                            </Badge>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-1">
-                                <MapPin className="w-3 h-3 text-slate-400" />
-                                <span className="text-xs text-slate-500">{ad.region}</span>
-                              </div>
-                              <span className="font-bold text-emerald-600 text-sm">{ad.price} π</span>
-                            </div>
-                          </div>
+                    <Card className="cursor-pointer hover:shadow-lg transition-all border-slate-200 overflow-hidden h-full flex flex-col">
+                      <div className="relative pt-[75%] md:pt-[60%]">
+                        <img
+                          src={ad.images[0] || "/placeholder.svg"}
+                          alt={ad.title}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        {ad.is_promoted && (
+                          <Badge className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white text-xs">
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
+                      <CardContent className="p-3 flex-1 flex flex-col">
+                        <div className="flex items-start justify-between mb-1">
+                          <h3 className="font-medium text-slate-900 text-sm leading-tight line-clamp-2">{ad.title}</h3>
+                        </div>
+                        <div className="flex items-center space-x-1 mb-2 mt-auto">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          <span className="text-xs text-slate-600 font-medium">4.5</span>
+                          <span className="text-xs text-slate-600">({ad.views})</span>
+                        </div>
+                        <div className="flex items-center justify-between mt-2">
+                          <Badge variant="secondary" className="text-xs bg-slate-100 text-slate-700 border-0 max-w-[50%] truncate">
+                            {ad.category}
+                          </Badge>
+                          <span className="font-bold text-emerald-600 text-sm">{ad.price} π</span>
                         </div>
                       </CardContent>
                     </Card>

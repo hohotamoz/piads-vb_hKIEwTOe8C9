@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout variant="light">
-      <div className="w-full max-w-sm animate-slide-up">
+      <div className="w-full max-w-sm animate-slide-up mx-auto px-4">
         {/* Back Link */}
         <Link
           href="/auth/login"
