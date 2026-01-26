@@ -30,7 +30,7 @@ export default function MessagesPage() {
 
     const loadConversations = async () => {
       try {
-        const userConversations = await realtimeMessaging.getConversations(user.id)
+        const userConversations = await realtimeMessaging.getConversations(user.id, user.email)
         setConversations(userConversations)
 
         if (typeof window !== "undefined") {
@@ -67,7 +67,7 @@ export default function MessagesPage() {
 
     if (user) {
       realtimeMessaging.markAsRead(selectedChat, user.id)
-      realtimeMessaging.getConversations(user.id).then(setConversations)
+      realtimeMessaging.getConversations(user.id, user.email).then(setConversations)
     }
 
     return () => {
@@ -109,7 +109,7 @@ export default function MessagesPage() {
 
       setMessageText("")
       // Refresh conversations to update last message snippet
-      const updatedConvs = await realtimeMessaging.getConversations(user.id)
+      const updatedConvs = await realtimeMessaging.getConversations(user.id, user.email)
       setConversations(updatedConvs)
     } catch (e) {
       console.error("Failed to send message", e)

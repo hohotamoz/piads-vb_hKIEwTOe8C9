@@ -35,10 +35,27 @@ class RealtimeMessagingService {
 
   constructor() { }
 
-  async getConversations(userId: string): Promise<Conversation[]> {
+  async getConversations(userId: string, userEmail?: string): Promise<Conversation[]> {
     if (!isSupabaseConfigured) return []
 
     try {
+      // Resolve all related User IDs (New Auth ID + Legacy Profile ID)
+      const targetIds = new Set<string>([userId])
+
+      if (userEmail) {
+        // Try to find if there's a profile ID that differs from Auth ID (Legacy data linkage)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', userEmail)
+          .maybeSingle() // Use maybeSingle to avoid 406 on multiple
+
+        if (profile) targetIds.add(profile.id)
+      }
+
+      const idList = Array.from(targetIds).map(id => `"${id}"`).join(',') // Quote IDs for Postgres filter
+      const orFilter = `sender_id.in.(${idList}),receiver_id.in.(${idList})`
+
       // Fetch unique conversations by finding distinct ad_id and partner combinations
       // This is a complex query, simplified here by fetching latest messages
       const { data: messages, error } = await supabase
@@ -49,7 +66,7 @@ class RealtimeMessagingService {
           receiver:profiles!receiver_id(name, avatar),
           ad:ads!ad_id(title)
         `)
-        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+        .or(orFilter)
         .order("created_at", { ascending: false })
 
       if (error) throw error
@@ -57,12 +74,15 @@ class RealtimeMessagingService {
       const conversationMap = new Map<string, Conversation>()
 
       messages.forEach((msg: any) => {
-        const partnerId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id
+        // Determine who the "partner" is relative to "me" (one of my IDs)
+        const isSenderMe = targetIds.has(msg.sender_id)
+        const partnerId = isSenderMe ? msg.receiver_id : msg.sender_id
+
         // Group by Ad ID + Partner ID to create unique conversation context
         const convId = `${msg.ad_id}_${partnerId}`
 
         if (!conversationMap.has(convId)) {
-          const partnerProfile = msg.sender_id === userId ? msg.receiver : msg.sender
+          // const partnerProfile = isSenderMe ? msg.receiver : msg.sender // unused
 
           conversationMap.set(convId, {
             id: convId,
@@ -77,7 +97,8 @@ class RealtimeMessagingService {
               read: msg.is_read,
               type: "text", // Defaulting to text for now
             },
-            unreadCount: (msg.receiver_id === userId && !msg.is_read) ? 1 : 0,
+            // Count unread if I am the receiver
+            unreadCount: (targetIds.has(msg.receiver_id) && !msg.is_read) ? 1 : 0,
             adId: msg.ad_id,
             adTitle: msg.ad?.title || "Unknown Ad",
             createdAt: new Date(msg.created_at), // This serves as last active
@@ -86,7 +107,7 @@ class RealtimeMessagingService {
         } else {
           // Increment unread count if we found another unread message for this conversation
           const conv = conversationMap.get(convId)!
-          if (msg.receiver_id === userId && !msg.is_read) {
+          if (targetIds.has(msg.receiver_id) && !msg.is_read) {
             conv.unreadCount += 1
           }
         }
