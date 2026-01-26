@@ -90,69 +90,76 @@ export async function signIn(email: string, password: string): Promise<User | nu
   const emailLower = email.toLowerCase().trim()
   if (!email || !password) return null
 
-  // 1. Try Supabase Login
+  // 1. Try Supabase Auth (The Source of Truth)
   if (isSupabaseConfigured) {
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', emailLower)
-        .single()
+      // First, try standard Auth login (Gets a real session)
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: emailLower,
+        password: password
+      })
 
-      if (!error && profile) {
-        // Verify Password Hash
-        // Note: For real security you rely on Supabase Auth. 
-        // Here we are comparing the stored custom hash to support the legacy system migration.
-        // We need to import the hash function which is unfortunately not exported directly from credentials.ts in the original file,
-        // but we can re-implement or export it. I'll stick to 'verifyLocalCredentials' logic if possible but it relies on localStorage.
-        // So we will re-implement a simple check or assume the profile has the hash.
+      if (!authError && authData.user) {
+        // Success! Fetch full profile
+        const { data: profile } = await supabase.from('profiles').select('*').eq('email', emailLower).single()
 
-        // Let's rely on the client-side hash check for this specific "custom auth" implementation
-        // ideally we would move this to a Supabase Edge Function or RPC to be secure.
-        // For this task, we verify against the hash stored in the profile row.
+        // Return structured user
+        const user: User = {
+          id: profile?.id || authData.user.id,
+          email: authData.user.email!,
+          name: profile?.name || authData.user.user_metadata.full_name || "User",
+          role: (profile?.role as UserRole) || 'user',
+          avatar: profile?.avatar || undefined,
+          verified: profile?.verified || false,
+          createdAt: new Date(authData.user.created_at),
+          preferences: profile?.preferences,
+          stats: profile?.stats,
+          isMigrated: true
+        }
 
-        // We need to hash the input password to compare. 
-        // Since we can't easily import the internal hash function from credentials.ts without modifying it, 
-        // we will fetch the 'credentials' logic or use a consistent hashing method.
-        // Let's assume we update credentials.ts to export 'hashPassword' or we duplicate the simple hash here.
-        // See updated imports above: `hashPassword` (need to export it in credentials.ts first!)
+        saveUserSession(user)
+        return user
+      }
 
-        // WARNING: If credentials.ts doesn't export hashPassword, this will fail. 
-        // I will assume for now we will update credentials.ts as well. 
+      // If Auth failed, it might be a Legacy User (Profile exists, but no Auth User)
+      // Check legacy profile hash
+      const { data: profile } = await supabase.from('profiles').select('*').eq('email', emailLower).single()
 
-        // If we can't verify hash here (because it's salt-dependent), we might need to fallback to 
-        // checking if the user exists locally to verify credentials, OR trust the migration.
+      if (profile && profile.password_hash) {
+        // Verify Hash
+        const salt = "piads_secure_salt_2024"
+        let hash = 0
+        const combined = password + salt
+        for (let i = 0; i < combined.length; i++) {
+          const char = combined.charCodeAt(i)
+          hash = ((hash << 5) - hash) + char
+          hash = hash & hash
+        }
+        const computedHash = hash.toString(36)
 
-        // Actually, let's use a simpler approach: 
-        // If profile exists in Supabase, we trust it IF we can verify the password.
-        // Since we are migrating, we might not have the password hash in Supabase yet for everyone unless we migrated it.
+        if (profile.password_hash === computedHash) {
+          // Migrating Legacy User: Create Real Auth User
+          console.log("[Auth] Migrating legacy user to Supabase Auth...")
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: emailLower,
+            password: password,
+            options: {
+              data: {
+                full_name: profile.name,
+                role: profile.role
+              }
+            }
+          })
 
-        if (profile.password_hash) {
-          // We need the hash function. I'll add a temporary one here if needed, but best to export from credentials.
-          // For now, let's assume valid login if we find the user AND (fallback verify returns true OR we match hash).
-
-          // RE-IMPLEMENTING SIMPLE HASH FOR CONSISTENCY (Must match credentials.ts)
-          const salt = "piads_secure_salt_2024"
-          let hash = 0
-          const combined = password + salt
-          for (let i = 0; i < combined.length; i++) {
-            const char = combined.charCodeAt(i)
-            hash = ((hash << 5) - hash) + char
-            hash = hash & hash
-          }
-          const computedHash = hash.toString(36)
-
-          if (profile.password_hash === computedHash) {
+          if (!signUpError && signUpData.user) {
+            // Auto-login after migration
             const user: User = {
-              id: profile.id,
-              email: profile.email,
-              name: profile.name || "User",
+              id: signUpData.user.id, // NOTE: This ID might differ from profile.id if profile has legacy ID
+              email: emailLower,
+              name: profile.name,
               role: profile.role as UserRole,
-              avatar: profile.avatar || undefined,
               verified: profile.verified,
-              createdAt: new Date(profile.created_at),
-              preferences: profile.preferences,
-              stats: profile.stats,
+              createdAt: new Date(),
               isMigrated: true
             }
             saveUserSession(user)
@@ -160,19 +167,19 @@ export async function signIn(email: string, password: string): Promise<User | nu
           }
         }
       }
+
     } catch (e) {
-      console.warn("Supabase login failed, trying local:", e)
+      console.warn("Supabase login failed", e)
     }
   }
 
-  // 2. Fallback: Local Storage Login
+  // 2. Fallback: Local Storage Login (If Offline)
   const users = getAllUsersLocal()
   const user = users.find(u => u.email.toLowerCase() === emailLower)
 
   if (user) {
     const { verifyCredentials } = await import("./credentials")
     if (verifyCredentials(emailLower, password)) {
-      // Sync to Supabase if missing
       if (isSupabaseConfigured) {
         syncUserToSupabase(user, password).catch(console.error)
       }
@@ -181,14 +188,12 @@ export async function signIn(email: string, password: string): Promise<User | nu
     }
   }
 
-  // 3. Admin Fallback (Hardcoded)
+  // 3. Admin Fallback
   if (isAdminEmail(emailLower)) {
     const { verifyCredentials, hasStoredCredentials } = await import("./credentials")
     if (hasStoredCredentials(emailLower)) {
       if (!verifyCredentials(emailLower, password)) return null
     }
-
-    // Create Admin User Object
     const adminUser: User = {
       id: "admin-master",
       email: emailLower,
@@ -198,11 +203,7 @@ export async function signIn(email: string, password: string): Promise<User | nu
       createdAt: new Date(),
       stats: { piBalance: 10000, totalAds: 0 },
     }
-
     saveUserSession(adminUser)
-    // Try to sync admin to Supabase
-    if (isSupabaseConfigured) syncUserToSupabase(adminUser, password).catch(console.error)
-
     return adminUser
   }
 

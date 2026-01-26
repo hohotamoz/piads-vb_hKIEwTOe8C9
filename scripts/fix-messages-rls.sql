@@ -25,23 +25,33 @@ alter table public.reviews enable row level security;
 
 -- 4. MESSAGES Policies
 
--- Users can see messages where they are sender or receiver
+-- Users can see messages where they are sender or receiver (ID match or Email match for legacy support)
 drop policy if exists "Users can see their own messages" on public.messages;
 create policy "Users can see their own messages" 
 on public.messages for select 
-using (auth.uid() = sender_id or auth.uid() = receiver_id);
+using (
+  auth.uid() = sender_id 
+  OR auth.uid() = receiver_id
+  OR auth.email() in (select email from public.profiles where id = sender_id or id = receiver_id)
+);
 
--- Users can insert messages if they are the sender
+-- Users can insert messages if they are the sender (ID or Email match)
 drop policy if exists "Users can send messages" on public.messages;
 create policy "Users can send messages" 
 on public.messages for insert 
-with check (auth.uid() = sender_id);
+with check (
+  auth.uid() = sender_id
+  OR auth.email() in (select email from public.profiles where id = sender_id)
+);
 
 -- Users can update (mark as read) messages if they are receiver
 drop policy if exists "Users can update received messages" on public.messages;
 create policy "Users can update received messages" 
 on public.messages for update 
-using (auth.uid() = receiver_id);
+using (
+  auth.uid() = receiver_id
+  OR auth.email() in (select email from public.profiles where id = receiver_id)
+);
 
 
 -- 5. REVIEWS Policies
