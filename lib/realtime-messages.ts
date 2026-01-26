@@ -320,4 +320,6 @@ class RealtimeMessagingService {
     return Promise.resolve(0)
   }
 
-  export const realtimeMessaging = new RealtimeMessagingService()
+}
+
+export const realtimeMessaging = new RealtimeMessagingService()
