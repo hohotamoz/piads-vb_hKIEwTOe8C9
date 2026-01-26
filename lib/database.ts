@@ -272,7 +272,9 @@ export async function createReview(review: {
   comment: string
 }) {
   try {
-    if (!isSupabaseConfigured) return createReviewFallback(review)
+    if (!isSupabaseConfigured) {
+      throw new Error("Database not configured")
+    }
     const { data, error } = await supabase
       .from('reviews')
       .insert(review)
@@ -282,14 +284,14 @@ export async function createReview(review: {
     if (error) throw error
     return data
   } catch (e) {
-    console.error("Supabase review error, using fallback", e)
-    return createReviewFallback(review)
+    console.error("Supabase review error", e)
+    throw e // Propagate error instead of fallback
   }
 }
 
 export async function getAdReviews(adId: string) {
   try {
-    if (!isSupabaseConfigured) return getAdReviewsFallback(adId)
+    if (!isSupabaseConfigured) return []
     const { data, error } = await supabase
       .from('reviews')
       .select('*')
@@ -299,7 +301,8 @@ export async function getAdReviews(adId: string) {
     if (error) throw error
     return data || []
   } catch (e) {
-    return getAdReviewsFallback(adId)
+    console.error("Error fetching reviews", e)
+    return []
   }
 }
 
@@ -311,7 +314,7 @@ export async function createMessage(message: {
   content: string
 }) {
   try {
-    if (!isSupabaseConfigured) return createMessageFallback(message)
+    if (!isSupabaseConfigured) throw new Error("Database not configured")
     const { data, error } = await supabase
       .from('messages')
       .insert(message)
@@ -321,14 +324,14 @@ export async function createMessage(message: {
     if (error) throw error
     return data
   } catch (e) {
-    console.error("Supabase message error, using fallback", e)
-    return createMessageFallback(message)
+    console.error("Supabase message error", e)
+    throw e
   }
 }
 
 export async function getUserMessages(userId: string) {
   try {
-    if (!isSupabaseConfigured) return getUserMessagesFallback(userId)
+    if (!isSupabaseConfigured) return []
     const { data, error } = await supabase
       .from('messages')
       .select('*')
@@ -338,13 +341,13 @@ export async function getUserMessages(userId: string) {
     if (error) throw error
     return data || []
   } catch (e) {
-    return getUserMessagesFallback(userId)
+    return []
   }
 }
 
 export async function getConversation(adId: string, userId: string, otherUserId: string) {
   try {
-    if (!isSupabaseConfigured) return getConversationFallback(adId, userId, otherUserId)
+    if (!isSupabaseConfigured) return []
     const { data, error } = await supabase
       .from('messages')
       .select('*')
@@ -355,7 +358,7 @@ export async function getConversation(adId: string, userId: string, otherUserId:
     if (error) throw error
     return data || []
   } catch (e) {
-    return getConversationFallback(adId, userId, otherUserId)
+    return []
   }
 }
 
