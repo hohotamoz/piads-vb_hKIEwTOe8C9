@@ -136,7 +136,7 @@ export default function HomePage() {
 
       {/* Header */}
       <header className="bg-gradient-to-r from-primary to-[#312E81] sticky top-0 z-40 shadow-lg">
-        <div className="px-4 py-4">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl flex items-center justify-center shadow-md">
@@ -147,7 +147,28 @@ export default function HomePage() {
                 <p className="text-xs text-white/60">Pi Network Marketplace</p>
               </div>
             </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-6">
+              <Link href="/" className="text-white hover:text-amber-400 font-medium transition-colors">Home</Link>
+              <Link href="/search" className="text-white hover:text-amber-400 font-medium transition-colors">Search</Link>
+              <Link href="/messages" className="text-white hover:text-amber-400 font-medium transition-colors">Messages</Link>
+              <Link href="/post">
+                <Button size="sm" className="bg-amber-400 hover:bg-amber-500 text-foreground font-bold rounded-full">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Post Ad
+                </Button>
+              </Link>
+            </div>
+
             <div className="flex items-center space-x-2">
+              <Link href={user ? "/profile" : "/auth/login"} className="hidden md:flex">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
+                  <UserIcon className="w-5 h-5 mr-2" />
+                  {user ? "Profile" : "Login"}
+                </Button>
+              </Link>
+
               <Link href="/notifications">
                 <Button variant="ghost" size="sm" className="relative w-10 h-10 p-0 hover:bg-white/10 rounded-full">
                   <Bell className="w-5 h-5 text-white" />
@@ -162,7 +183,7 @@ export default function HomePage() {
           </div>
 
           {/* Search Bar */}
-          <div className="relative">
+          <div className="relative max-w-2xl mx-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Search for products, services..."
@@ -176,7 +197,7 @@ export default function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main className="px-4 py-4 space-y-6">
+      <main className="container mx-auto px-4 py-4 space-y-8 min-h-[calc(100vh-200px)]">
         {/* Categories */}
         <section>
           <div className="flex items-center justify-between mb-3">
@@ -185,12 +206,12 @@ export default function HomePage() {
               Categories
             </h2>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             {categoryConfig.map((category) => {
               const count = getCategoryCount(category.name)
               return (
                 <Link key={category.id} href={`/category/${category.slug}`}>
-                  <Card className="hover:shadow-lg transition-all hover:scale-105 border shadow-sm bg-card">
+                  <Card className="hover:shadow-lg transition-all hover:scale-105 border shadow-sm bg-card h-full">
                     <CardContent className="p-4 text-center">
                       <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-2">
                         <category.Icon className="w-6 h-6 text-primary" />
@@ -219,15 +240,15 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {featuredAds.map((ad) => (
                 <Link key={ad.id} href={`/ad/${ad.id}`}>
-                  <Card className="hover:shadow-lg transition-all hover:scale-[1.02] border overflow-hidden bg-card shadow-sm">
-                    <div className="relative">
+                  <Card className="hover:shadow-lg transition-all hover:scale-[1.02] border overflow-hidden bg-card shadow-sm h-full flex flex-col">
+                    <div className="relative pt-[75%]">
                       <img
                         src={ad.images[0] || "/placeholder.svg"}
                         alt={ad.title}
-                        className="w-full h-32 object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
                       {ad.promoted && (
                         <Badge className="absolute top-2 left-2 bg-gradient-to-r from-amber-400 to-amber-500 border-0 text-foreground font-bold">
@@ -236,9 +257,9 @@ export default function HomePage() {
                         </Badge>
                       )}
                     </div>
-                    <CardContent className="p-3">
-                      <h3 className="text-sm font-bold text-foreground line-clamp-2 mb-1">{ad.title}</h3>
-                      <div className="flex items-center justify-between">
+                    <CardContent className="p-3 flex-1 flex flex-col">
+                      <h3 className="text-sm font-bold text-foreground line-clamp-2 mb-1 flex-1">{ad.title}</h3>
+                      <div className="flex items-center justify-between mt-auto">
                         <p className="text-base font-bold text-primary">{ad.price} π</p>
                         <div className="flex items-center space-x-1">
                           <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
@@ -290,23 +311,23 @@ export default function HomePage() {
           ) : (
             <Tabs defaultValue="recent">
               <TabsContent value="recent" className="mt-0">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {filteredAds.map((ad) => (
                     <Link key={ad.id} href={`/ad/${ad.id}`}>
-                      <Card className="hover:shadow-lg transition-all hover:scale-[1.02] border overflow-hidden bg-card shadow-sm">
-                        <div className="relative">
+                      <Card className="hover:shadow-lg transition-all hover:scale-[1.02] border overflow-hidden bg-card shadow-sm h-full flex flex-col">
+                        <div className="relative pt-[75%]">
                           <img
                             src={ad.images[0] || "/placeholder.svg"}
                             alt={ad.title}
-                            className="w-full h-32 object-cover"
+                            className="absolute inset-0 w-full h-full object-cover"
                           />
                           <Badge className="absolute top-2 right-2 bg-card/90 text-primary border-0 text-xs">
                             {ad.category}
                           </Badge>
                         </div>
-                        <CardContent className="p-3">
-                          <h3 className="text-sm font-bold text-foreground line-clamp-2 mb-1">{ad.title}</h3>
-                          <p className="text-base font-bold text-primary mb-2">{ad.price} π</p>
+                        <CardContent className="p-3 flex-1 flex flex-col">
+                          <h3 className="text-sm font-bold text-foreground line-clamp-2 mb-1 flex-1">{ad.title}</h3>
+                          <p className="text-base font-bold text-primary mb-2 mt-auto">{ad.price} π</p>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <div className="flex items-center">
                               <MapPin className="w-3 h-3 mr-1" />
@@ -331,7 +352,7 @@ export default function HomePage() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border shadow-2xl z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border shadow-2xl z-50">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-5 gap-1 px-2 py-3">
             <Link href="/" className="flex justify-center">

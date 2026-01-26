@@ -190,7 +190,7 @@ export default function AdDetailPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-24">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="px-4 py-3 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => router.back()} className="w-10 h-10 p-0 rounded-full hover:bg-slate-100">
             <ArrowLeft className="w-5 h-5 text-slate-900" />
           </Button>
@@ -206,175 +206,177 @@ export default function AdDetailPage() {
         </div>
       </header>
 
-      {/* Image Gallery */}
-      <div className="bg-white p-4 mb-4 shadow-sm">
-        <ImageGallery images={ad.images} title={ad.title} />
-        {ad.featured && (
-          <Badge className="mt-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-md">
-            ⭐ Featured
-          </Badge>
-        )}
-      </div>
-
-      <div className="px-4 space-y-4">
-        {/* Price and Title */}
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-1">{ad.title}</h2>
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <MapPin className="w-4 h-4" />
-                  <span>{ad.location}</span>
-                  <span>•</span>
-                  <Eye className="w-4 h-4" />
-                  <span>{ad.views} views</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-baseline gap-2 mb-3">
-              <span className="text-3xl font-bold text-emerald-600">{ad.price} π</span>
-              {ad.stock && (
-                <Badge variant="secondary" className="text-xs">
-                  {ad.stock} in stock
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-1 mb-3">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    className={`w-4 h-4 ${star <= avgRating ? "fill-yellow-400 text-yellow-400" : "text-slate-300"
-                      }`}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-slate-600 font-medium">
-                {avgRating > 0 ? avgRating.toFixed(1) : "No reviews"}
-              </span>
-              <span className="text-sm text-slate-400">({reviewCount})</span>
-            </div>
-            <Badge variant="outline" className="rounded-full">
-              {ad.category}
+      <div className="max-w-4xl mx-auto">
+        {/* Image Gallery */}
+        <div className="bg-white p-4 mb-4 shadow-sm md:rounded-b-xl">
+          <ImageGallery images={ad.images} title={ad.title} />
+          {ad.featured && (
+            <Badge className="mt-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-md">
+              ⭐ Featured
             </Badge>
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
-        {/* Seller Info */}
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <Avatar className="w-12 h-12 border-2 border-emerald-500">
-                  <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-bold">
-                    {ad.seller.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+        <div className="px-4 space-y-4">
+          {/* Price and Title */}
+          <Card className="shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-bold text-slate-900">{ad.seller}</h3>
-                  <div className="flex items-center gap-1 text-xs text-slate-600">
-                    <Shield className="w-3 h-3 text-emerald-600" />
-                    <span>Verified Seller</span>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-1">{ad.title}</h2>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <MapPin className="w-4 h-4" />
+                    <span>{ad.location}</span>
+                    <span>•</span>
+                    <Eye className="w-4 h-4" />
+                    <span>{ad.views} views</span>
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                onClick={handleContactSeller}
-                className="rounded-xl border-emerald-500 text-emerald-600 hover:bg-emerald-50 bg-transparent"
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Message
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleCallSeller}
-                className="rounded-xl border-emerald-500 text-emerald-600 hover:bg-emerald-50 bg-transparent"
-              >
-                <Phone className="w-4 h-4 mr-2" />
-                Call
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Description */}
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
-            <h3 className="font-bold text-slate-900 mb-2">Description</h3>
-            <p className="text-slate-600 leading-relaxed whitespace-pre-line">{ad.description}</p>
-            <Separator className="my-3" />
-            <div className="flex items-center justify-between text-sm text-slate-500">
-              <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                <span>Posted {ad.createdAt.toLocaleDateString()}</span>
-              </div>
-              <div className="flex gap-2">
-                {ad.tags?.map((tag: string, idx: number) => (
-                  <Badge key={idx} variant="secondary" className="text-xs">
-                    #{tag}
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-3xl font-bold text-emerald-600">{ad.price} π</span>
+                {ad.stock && (
+                  <Badge variant="secondary" className="text-xs">
+                    {ad.stock} in stock
                   </Badge>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Reviews Section */}
-        <Card className="shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-slate-900">Reviews ({reviewCount})</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAddReview}
-                className="rounded-xl bg-transparent"
-              >
-                Write Review
-              </Button>
-            </div>
-
-            {reviews.length === 0 ? (
-              <p className="text-center text-slate-500 py-6">No reviews yet. Be the first to review!</p>
-            ) : (
-              <div className="space-y-4">
-                {reviews.slice(0, 3).map((review) => (
-                  <div key={review.id} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarFallback className="bg-gradient-to-br from-purple-400 to-blue-500 text-white text-sm font-bold">
-                          {review.userName.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-semibold text-slate-900 text-sm">{review.userName}</h4>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm font-medium">{review.rating}</span>
-                          </div>
-                        </div>
-                        <p className="text-sm text-slate-600 mb-1">{review.comment}</p>
-                        <p className="text-xs text-slate-400">
-                          {review.createdAt.toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {reviews.length > 3 && (
-                  <Button variant="ghost" className="w-full text-emerald-600">
-                    View all {reviews.length} reviews
-                  </Button>
                 )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <div className="flex items-center gap-1 mb-3">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`w-4 h-4 ${star <= avgRating ? "fill-yellow-400 text-yellow-400" : "text-slate-300"
+                        }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-slate-600 font-medium">
+                  {avgRating > 0 ? avgRating.toFixed(1) : "No reviews"}
+                </span>
+                <span className="text-sm text-slate-400">({reviewCount})</span>
+              </div>
+              <Badge variant="outline" className="rounded-full">
+                {ad.category}
+              </Badge>
+            </CardContent>
+          </Card>
+
+          {/* Seller Info */}
+          <Card className="shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-12 h-12 border-2 border-emerald-500">
+                    <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-teal-500 text-white font-bold">
+                      {ad.seller.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-bold text-slate-900">{ad.seller}</h3>
+                    <div className="flex items-center gap-1 text-xs text-slate-600">
+                      <Shield className="w-3 h-3 text-emerald-600" />
+                      <span>Verified Seller</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleContactSeller}
+                  className="rounded-xl border-emerald-500 text-emerald-600 hover:bg-emerald-50 bg-transparent"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Message
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCallSeller}
+                  className="rounded-xl border-emerald-500 text-emerald-600 hover:bg-emerald-50 bg-transparent"
+                >
+                  <Phone className="w-4 h-4 mr-2" />
+                  Call
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Description */}
+          <Card className="shadow-sm">
+            <CardContent className="p-4">
+              <h3 className="font-bold text-slate-900 mb-2">Description</h3>
+              <p className="text-slate-600 leading-relaxed whitespace-pre-line">{ad.description}</p>
+              <Separator className="my-3" />
+              <div className="flex items-center justify-between text-sm text-slate-500">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  <span>Posted {ad.createdAt.toLocaleDateString()}</span>
+                </div>
+                <div className="flex gap-2">
+                  {ad.tags?.map((tag: string, idx: number) => (
+                    <Badge key={idx} variant="secondary" className="text-xs">
+                      #{tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Reviews Section */}
+          <Card className="shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-slate-900">Reviews ({reviewCount})</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddReview}
+                  className="rounded-xl bg-transparent"
+                >
+                  Write Review
+                </Button>
+              </div>
+
+              {reviews.length === 0 ? (
+                <p className="text-center text-slate-500 py-6">No reviews yet. Be the first to review!</p>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.slice(0, 3).map((review) => (
+                    <div key={review.id} className="border-b border-slate-100 last:border-0 pb-4 last:pb-0">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="w-10 h-10">
+                          <AvatarFallback className="bg-gradient-to-br from-purple-400 to-blue-500 text-white text-sm font-bold">
+                            {review.userName.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-semibold text-slate-900 text-sm">{review.userName}</h4>
+                            <div className="flex items-center gap-1">
+                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                              <span className="text-sm font-medium">{review.rating}</span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-slate-600 mb-1">{review.comment}</p>
+                          <p className="text-xs text-slate-400">
+                            {review.createdAt.toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {reviews.length > 3 && (
+                    <Button variant="ghost" className="w-full text-emerald-600">
+                      View all {reviews.length} reviews
+                    </Button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Fixed Bottom Action */}
