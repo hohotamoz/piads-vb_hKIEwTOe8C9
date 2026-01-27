@@ -151,9 +151,9 @@ export default function PostAdPage() {
       const activeAdsCount = await Promise.race([
         getUserActiveAdsCount(user.id),
         new Promise<number>((resolve) => setTimeout(() => {
-          console.warn("[v0] Ad limit check timed out after 5000ms. Allowing post.");
+          console.warn("[v0] Ad limit check timed out after 1500ms. Allowing post.");
           resolve(0);
-        }, 5000))
+        }, 1500))
       ]);
 
       console.log(`[v0] Ad limit check completed in ${Date.now() - checkStartTime}ms. Result: ${activeAdsCount}`);
