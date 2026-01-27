@@ -184,6 +184,28 @@ export async function getUserAds(userId: string) {
   }
 }
 
+export async function getUserActiveAdsCount(userId: string): Promise<number> {
+  try {
+    if (!isSupabaseConfigured) return 0
+
+    const { count, error } = await supabase
+      .from('ads')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'active')
+
+    if (error) {
+      console.error("[v0] Error counting user ads:", error)
+      return 0
+    }
+
+    return count || 0
+  } catch (error) {
+    console.error("[v0] Unexpected error counting user ads:", error)
+    return 0
+  }
+}
+
 export async function updateAd(id: string, updates: AdUpdate) {
   try {
     if (!isSupabaseConfigured) {

@@ -15,7 +15,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
 import { uploadImage } from "@/lib/image-upload"
-import { createAd, getUserAds } from "@/lib/database"
+import { createAd, getUserAds, getUserActiveAdsCount } from "@/lib/database"
 import { toast } from "sonner"
 import { getUserAdLimit, getUserSubscription } from "@/lib/subscription-manager"
 
@@ -144,19 +144,17 @@ export default function PostAdPage() {
 
       // Check subscription limits from database
       console.log("[v0] Checking user ad limits...")
-      const userAds = await getUserAds(user.id)
-      const activeAds = userAds.filter(ad => ad.status === "active")
+      const activeAdsCount = await getUserActiveAdsCount(user.id)
       const adLimit = getUserAdLimit(user.id)
       const subscription = getUserSubscription(user.id)
 
       console.log("[v0] User ad stats:", {
-        totalAds: userAds.length,
-        activeAds: activeAds.length,
+        activeAdsCount,
         adLimit
       })
 
       // Check if user can post more ads
-      if (adLimit !== -1 && activeAds.length >= adLimit) {
+      if (adLimit !== -1 && activeAdsCount >= adLimit) {
         toast.error(
           subscription
             ? `You've reached your ad limit (${adLimit} ads). Upgrade to post more ads!`
