@@ -82,10 +82,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Subscribe to Supabase Auth Changes (Fix for Race Conditions)
+    const { supabase } = require("@/lib/supabase") // Dynamic require to avoid build issues if env is missing
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
+      console.log(`[v0] Supabase Auth Event: ${event}`)
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        // Give time for initAuthBridge to write to localStorage if needed, or just fetch directly
+        setTimeout(checkAuth, 200)
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+        if (typeof document !== "undefined") {
+          document.cookie = "auth_token=; path=/; max-age=0"
+          document.cookie = "user_email=; path=/; max-age=0"
+        }
+      }
+    })
+
     // Immediate check + short delay fallback
     checkAuth()
     const timer = setTimeout(checkAuth, 500) // Retry after 500ms to catch race conditions
-    return () => clearTimeout(timer)
+
+    return () => {
+      clearTimeout(timer)
+      authListener.subscription.unsubscribe()
+    }
   }, [])
 
   const login = async (email: string, password: string) => {
