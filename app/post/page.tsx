@@ -180,9 +180,12 @@ export default function PostAdPage() {
       }
 
       // Validate price
-      const priceValue = parseFloat(formData.price)
-      if (isNaN(priceValue) || priceValue <= 0) {
-        throw new Error("Invalid price value")
+      // Replace comma with dot to handle different locales
+      const normalizedPrice = formData.price.replace(/,/g, '.')
+      const priceValue = parseFloat(normalizedPrice)
+
+      if (isNaN(priceValue) || priceValue < 0) { // Allow 0 for free items
+        throw new Error("Invalid price value. Please enter a valid number.")
       }
 
       console.log("[v0] Creating ad in database...")
