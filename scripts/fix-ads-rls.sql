@@ -11,6 +11,11 @@ drop policy if exists "Users can create ads" on public.ads;
 create policy "Users can create ads" 
 on public.ads for insert with check (auth.uid() = user_id);
 
+-- Policy: Users can view their own ads (all statuses)
+drop policy if exists "Users can view own ads" on public.ads;
+create policy "Users can view own ads" 
+on public.ads for select using (auth.uid() = user_id);
+
 -- Policy: Users can update their own ads
 drop policy if exists "Users can update own ads" on public.ads;
 create policy "Users can update own ads" 

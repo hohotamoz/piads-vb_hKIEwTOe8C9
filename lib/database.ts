@@ -36,11 +36,17 @@ export async function createAd(ad: AdInsert) {
       throw new Error("Database connection not configured. Please check your environment variables.")
     }
 
-    const { data, error } = await supabase
-      .from('ads')
-      .insert(ad)
-      .select()
-      .single()
+    // Use a timeout for the insert operation
+    const { data, error } = await Promise.race([
+      supabase
+        .from('ads')
+        .insert(ad)
+        .select()
+        .single(),
+      new Promise<any>((_, reject) =>
+        setTimeout(() => reject(new Error("Request timed out")), 15000)
+      )
+    ]);
 
     if (error) {
       console.error("[v0] Supabase Insert Error:", error.message, error.details, error.code)
