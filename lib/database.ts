@@ -32,8 +32,8 @@ export async function createAd(ad: AdInsert) {
 
     // Check if Supabase is configured
     if (!isSupabaseConfigured) {
-      console.warn("[v0] Supabase not configured, using fallback storage")
-      return createAdFallback({ ...ad, images: ad.images || [], status: ad.status || 'active' })
+      console.warn("[v0] Supabase not configured.")
+      throw new Error("Database connection not configured. Please check your environment variables.")
     }
 
     const { data, error } = await supabase
@@ -43,15 +43,16 @@ export async function createAd(ad: AdInsert) {
       .single()
 
     if (error) {
-      console.error("[v0] Supabase error, falling back to localStorage:", error)
-      return createAdFallback({ ...ad, images: ad.images || [], status: ad.status || 'active' })
+      console.error("[v0] Supabase Insert Error:", error.message, error.details, error.code)
+      throw new Error(`Database Error: ${error.message}`)
     }
 
     console.log("[v0] Ad created successfully in Supabase:", data?.id)
     return data
-  } catch (error) {
-    console.error("[v0] Error in createAd, using fallback:", error)
-    return createAdFallback({ ...ad, images: ad.images || [], status: ad.status || 'active' })
+  } catch (error: any) {
+    console.error("[v0] Error in createAd:", error)
+    // Re-throw so the UI can catch it and show the toast
+    throw error
   }
 }
 
