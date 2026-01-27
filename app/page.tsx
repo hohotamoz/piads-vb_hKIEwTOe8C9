@@ -88,11 +88,23 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    if (user) {
-      const conversations = realtimeMessaging.getConversations(user.id)
-      const count = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0)
-      setUnreadCount(count)
+    async function fetchUnreadCount() {
+      if (user) {
+        try {
+          const conversations = await realtimeMessaging.getConversations(user.id)
+          if (Array.isArray(conversations)) {
+            const count = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0)
+            setUnreadCount(count)
+          } else {
+            setUnreadCount(0)
+          }
+        } catch (error) {
+          console.error("Error fetching unread count:", error)
+          setUnreadCount(0)
+        }
+      }
     }
+    fetchUnreadCount()
   }, [user])
 
   const handleSearch = () => {
