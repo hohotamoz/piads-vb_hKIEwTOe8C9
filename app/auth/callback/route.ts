@@ -51,25 +51,19 @@ export async function GET(request: NextRequest) {
             // Create response with redirect
             const response = NextResponse.redirect(`${requestUrl.origin}/`)
 
-            // Set Cookies for Middleware
-            response.cookies.set("auth_token", userId, {
+            // Set Cookies for Middleware and Client Hydration
+            // httpOnly must be false so AuthProvider can read it via document.cookie
+            const cookieOptions = {
                 path: "/",
                 maxAge: 86400, // 1 day
-                sameSite: "lax",
-                secure: process.env.NODE_ENV === "production"
-            })
-            response.cookies.set("user_email", email, {
-                path: "/",
-                maxAge: 86400,
-                sameSite: "lax",
-                secure: process.env.NODE_ENV === "production"
-            })
-            response.cookies.set("user_role", role, {
-                path: "/",
-                maxAge: 86400,
-                sameSite: "lax",
-                secure: process.env.NODE_ENV === "production"
-            })
+                sameSite: "lax" as const,
+                secure: process.env.NODE_ENV === "production",
+                httpOnly: false
+            }
+
+            response.cookies.set("auth_token", userId, cookieOptions)
+            response.cookies.set("user_email", email, cookieOptions)
+            response.cookies.set("user_role", role, cookieOptions)
 
             return response
         }
