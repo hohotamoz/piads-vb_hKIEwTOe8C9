@@ -15,7 +15,12 @@ export function AppWrapper({ children }: { children: ReactNode }) {
     // 1. Cleanup demo data
     cleanupAllDemoData()
     // 2. Init Auth Bridge (Sync Social Login)
-    initAuthBridge()
+    // 2. Init Auth Bridge (Sync Social Login)
+    const cleanupAuthBridge = initAuthBridge()
+
+    return () => {
+      cleanupAuthBridge()
+    }
 
     // 2. Check Supabase Connection
     const checkConnection = async () => {

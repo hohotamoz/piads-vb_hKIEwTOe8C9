@@ -313,67 +313,76 @@ export async function signInWithProvider(provider: 'google' | 'facebook', nextUr
 
 // --- Auth State Bridge ---
 // Call this in your main layout or auth provider to sync Supabase Auth state to local profile
-export function initAuthBridge() {
-  if (!isSupabaseConfigured) return
+export function initAuthBridge(): () => void {
+  if (!isSupabaseConfigured) return () => { }
 
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       console.log("[Auth Bridge] Supabase User Signed In:", session.user.email)
 
       const email = session.user.email
       if (!email) return
 
-      // 1. Check if profile exists
-      let { data: profile } = await supabase.from('profiles').select('*').eq('email', email).single()
+      try {
+        // 1. Check if profile exists
+        let { data: profile, error: fetchError } = await supabase.from('profiles').select('*').eq('email', email).single()
 
-      // 2. If not, create one
-      if (!profile) {
-        console.log("[Auth Bridge] Creating profile for OAuth user...")
-        const name = session.user.user_metadata.full_name || session.user.user_metadata.name || email.split('@')[0]
-        const avatar = session.user.user_metadata.avatar_url || session.user.user_metadata.picture
+        // 2. If not, create one
+        if (!profile && (!fetchError || fetchError.code === 'PGRST116')) { // PGRST116 is "Row not found"
+          console.log("[Auth Bridge] Creating profile for OAuth user...")
+          const name = session.user.user_metadata.full_name || session.user.user_metadata.name || email.split('@')[0]
+          const avatar = session.user.user_metadata.avatar_url || session.user.user_metadata.picture
 
-        const { data: newProfile, error } = await supabase.from('profiles').insert({
-          id: session.user.id, // Use Supabase Auth UUID
-          email: email,
-          name: name,
-          avatar: avatar,
-          role: 'user',
-          verified: true, // Social login implies verification
-          created_at: new Date().toISOString()
-        }).select().single()
+          // Use upsert to handle race conditions where profile might be created by trigger or parallel request
+          const { data: newProfile, error } = await supabase.from('profiles').upsert({
+            id: session.user.id, // Use Supabase Auth UUID
+            email: email,
+            name: name,
+            avatar: avatar,
+            role: 'user',
+            verified: true, // Social login implies verification
+            created_at: new Date().toISOString()
+          }, { onConflict: 'id' }).select().single()
 
-        if (error) {
-          console.error("[Auth Bridge] Failed to create profile:", error)
-          // Try to fetch again in case of race condition
-          const retry = await supabase.from('profiles').select('*').eq('email', email).single()
-          if (retry.data) profile = retry.data
-        } else {
-          profile = newProfile
+          if (error) {
+            // Ignore AbortError which happens on page reload/unmount during request
+            if (!error.message?.includes('AbortError')) {
+              console.error("[Auth Bridge] Failed to create profile:", error)
+            }
+          } else {
+            profile = newProfile
+          }
         }
-      }
 
-      // 3. Save to Local Session (Bridge to Legacy Auth)
-      if (profile) {
-        const user: User = {
-          id: profile.id,
-          email: profile.email,
-          name: profile.name || "User",
-          role: profile.role as UserRole,
-          avatar: profile.avatar || undefined,
-          verified: profile.verified,
-          createdAt: new Date(profile.created_at),
-          preferences: profile.preferences,
-          stats: profile.stats,
-          isMigrated: true
+        // 3. Save to Local Session (Bridge to Legacy Auth)
+        if (profile) {
+          const user: User = {
+            id: profile.id,
+            email: profile.email,
+            name: profile.name || "User",
+            role: profile.role as UserRole,
+            avatar: profile.avatar || undefined,
+            verified: profile.verified,
+            createdAt: new Date(profile.created_at),
+            preferences: profile.preferences,
+            stats: profile.stats,
+            isMigrated: true
+          }
+          saveUserSession(user)
         }
-        saveUserSession(user)
-        // Reload to applying changes if needed, or rely on reactive state if context listens to storage
-        // window.location.reload() // Optional: forceful reload
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error("[Auth Bridge] Unexpected error:", err)
+        }
       }
     } else if (event === 'SIGNED_OUT') {
       signOut()
     }
   })
+
+  return () => {
+    authListener.subscription.unsubscribe()
+  }
 }
 
 export function getCurrentUser(): User | null {
