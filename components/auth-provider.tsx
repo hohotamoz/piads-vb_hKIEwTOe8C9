@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("[v0] Checking authentication...")
         let currentUser = getCurrentUser()
 
-        // Hydrate from Cookies if LocalStorage is empty (e.g. after Social Login redirect)
+        // 1. If no local user, try hydration from cookies (Critical for Social Login redirects)
         if (!currentUser && typeof document !== "undefined") {
           const cookies = document.cookie.split(';').reduce((acc, cookie) => {
             const [key, value] = cookie.trim().split('=')
@@ -36,10 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }, {} as Record<string, string>)
 
           const authToken = cookies['auth_token']
-          const userEmail = cookies['user_email']
 
-          if (authToken && userEmail) {
-            console.log("[v0] Hydrating session from cookies...", userEmail)
+          if (authToken) {
+            console.log("[v0] Found auth token in cookies, hydrating session...")
             try {
               // Fetch latest profile from Supabase
               const { supabase } = await import("@/lib/supabase")
@@ -58,9 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   stats: profile.stats,
                   isMigrated: true
                 }
-                // Sync back to localStorage
+                // Sync back to localStorage for persistence
                 if (typeof window !== "undefined") {
                   localStorage.setItem("currentUser", JSON.stringify(currentUser))
+                  // Force cookie refresh
+                  document.cookie = `auth_token=${currentUser.id}; path=/; max-age=86400`
+                  document.cookie = `user_email=${currentUser.email}; path=/; max-age=86400`
                 }
               }
             } catch (err) {
@@ -71,11 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         console.log("[v0] Current user:", currentUser ? currentUser.email : "None")
         setUser(currentUser)
-
-        if (currentUser && typeof document !== "undefined") {
-          document.cookie = `auth_token=${currentUser.id}; path=/; max-age=86400`
-          document.cookie = `user_email=${currentUser.email}; path=/; max-age=86400`
-        }
       } catch (error) {
         console.error("[v0] Auth check error:", error)
         setUser(null)
@@ -85,8 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Add small delay to prevent white screen
-    const timer = setTimeout(checkAuth, 100)
+    // Immediate check + short delay fallback
+    checkAuth()
+    const timer = setTimeout(checkAuth, 500) // Retry after 500ms to catch race conditions
     return () => clearTimeout(timer)
   }, [])
 

@@ -176,18 +176,18 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+            <div className="grid grid-cols-3 gap-2 md:gap-4 pt-4 border-t border-border">
               <div className="text-center">
-                <p className="text-xl font-bold text-foreground">{user.stats?.totalAds || 0}</p>
-                <p className="text-xs text-muted-foreground">Active Ads</p>
+                <p className="text-lg md:text-xl font-bold text-foreground">{user.stats?.totalAds || 0}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">Ads</p>
+              </div>
+              <div className="text-center border-l border-r border-border/50">
+                <p className="text-lg md:text-xl font-bold text-foreground">{user.stats?.averageRating?.toFixed(1) || "N/A"}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">Rating</p>
               </div>
               <div className="text-center">
-                <p className="text-xl font-bold text-foreground">{user.stats?.averageRating?.toFixed(1) || "N/A"}</p>
-                <p className="text-xs text-muted-foreground">Rating</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-foreground">{user.stats?.totalRatings || 0}</p>
-                <p className="text-xs text-muted-foreground">Reviews</p>
+                <p className="text-lg md:text-xl font-bold text-foreground">{user.stats?.totalRatings || 0}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider">Reviews</p>
               </div>
             </div>
           </CardContent>
