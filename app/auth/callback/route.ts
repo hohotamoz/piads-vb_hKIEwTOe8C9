@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
                     // 2. Create if missing (Social Login first time)
                     console.log("[Callback] Creating profile for new social user...")
                     const name = session.user.user_metadata.full_name || session.user.user_metadata.name || email.split('@')[0]
-                    const avatar = session.user.user_metadata.avatar_url || session.user.user_metadata.picture
+                    const avatar = session.user.user_metadata.avatar_url || session.user.user_metadata.picture || ""
 
                     const { error: insertError } = await supabase.from('profiles').insert({
                         id: userId,
@@ -52,11 +52,15 @@ export async function GET(request: NextRequest) {
                         role: 'user',
                         verified: true,
                         created_at: new Date().toISOString()
-                    })
+                    }).select() // Add select to ensure we get the data back or specific error
 
                     if (insertError) {
-                        console.error("[Callback] Profile creation failed:", insertError)
-                        // Should we abort? Maybe not, allow login but profile might be partial
+                        // ignore unique violation if race condition with trigger
+                        if (insertError.code !== '23505') { // Postgres unique_violation code
+                            console.error("[Callback] Profile creation failed:", insertError)
+                        } else {
+                            console.log("[Callback] Profile already created by trigger.")
+                        }
                     }
                 }
             } catch (err) {
