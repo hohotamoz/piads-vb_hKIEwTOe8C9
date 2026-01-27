@@ -33,35 +33,16 @@ export async function GET(request: NextRequest) {
             let role = 'user' // Default
 
             try {
-                // 1. Try to fetch existing profile
-                const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single()
+                // Optimization: Try to fetch existing profile to get role
+                // We rely on the DB trigger 'handle_new_user' to create the profile for new users
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).single()
 
                 if (profile) {
                     role = profile.role
                 } else {
-                    // 2. Create if missing (Social Login first time)
-                    console.log("[Callback] Creating profile for new social user...")
-                    const name = session.user.user_metadata.full_name || session.user.user_metadata.name || email.split('@')[0]
-                    const avatar = session.user.user_metadata.avatar_url || session.user.user_metadata.picture || ""
-
-                    const { error: insertError } = await supabase.from('profiles').insert({
-                        id: userId,
-                        email: email,
-                        name: name,
-                        avatar: avatar,
-                        role: 'user',
-                        verified: true,
-                        created_at: new Date().toISOString()
-                    }).select() // Add select to ensure we get the data back or specific error
-
-                    if (insertError) {
-                        // ignore unique violation if race condition with trigger
-                        if (insertError.code !== '23505') { // Postgres unique_violation code
-                            console.error("[Callback] Profile creation failed:", insertError)
-                        } else {
-                            console.log("[Callback] Profile already created by trigger.")
-                        }
-                    }
+                    // Profile might be created asynchronously by trigger. Default to 'user'.
+                    // This avoids blocking the login flow for detailed profile creation check.
+                    console.log("[Callback] Profile not found immediately (trigger latency?), defaulting role to 'user'")
                 }
             } catch (err) {
                 console.error("[Callback] Profile check error:", err)

@@ -54,8 +54,6 @@ export default function LoginPage() {
     try {
       await login(email, password)
 
-      await new Promise((resolve) => setTimeout(resolve, 200))
-
       const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
       if (currentUser && currentUser.role === "admin") {
         window.location.href = "/admin"
