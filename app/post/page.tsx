@@ -144,7 +144,20 @@ export default function PostAdPage() {
 
       // Check subscription limits from database
       console.log("[v0] Checking user ad limits...")
-      const activeAdsCount = await getUserActiveAdsCount(user.id)
+      const checkStartTime = Date.now();
+
+      // Use a timeout to prevent hanging if the database query is slow
+      // Default to 0 (allow posting) if it times out
+      const activeAdsCount = await Promise.race([
+        getUserActiveAdsCount(user.id),
+        new Promise<number>((resolve) => setTimeout(() => {
+          console.warn("[v0] Ad limit check timed out after 5000ms. Allowing post.");
+          resolve(0);
+        }, 5000))
+      ]);
+
+      console.log(`[v0] Ad limit check completed in ${Date.now() - checkStartTime}ms. Result: ${activeAdsCount}`);
+
       const adLimit = getUserAdLimit(user.id)
       const subscription = getUserSubscription(user.id)
 
