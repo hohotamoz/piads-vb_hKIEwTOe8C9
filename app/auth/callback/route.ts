@@ -49,7 +49,8 @@ export async function GET(request: NextRequest) {
             }
 
             // Create response with redirect
-            const response = NextResponse.redirect(`${requestUrl.origin}/`)
+            const next = requestUrl.searchParams.get('next') || '/'
+            const response = NextResponse.redirect(`${requestUrl.origin}${next}`)
 
             // Set Cookies for Middleware and Client Hydration
             // httpOnly must be false so AuthProvider can read it via document.cookie

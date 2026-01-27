@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/components/auth-provider"
@@ -22,6 +22,8 @@ export default function LoginPage() {
   const [isPiBrowser, setIsPiBrowser] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get("redirect") || "/"
 
   useEffect(() => {
     // Check for Pi Browser environment
@@ -37,7 +39,7 @@ export default function LoginPage() {
     setIsLoading(true)
     setError("")
     try {
-      const { error } = await signInWithProvider(provider)
+      const { error } = await signInWithProvider(provider, redirectUrl)
       if (error) throw error
       // Redirect happens automatically by Supabase
     } catch (err: any) {
@@ -58,7 +60,7 @@ export default function LoginPage() {
       if (currentUser && currentUser.role === "admin") {
         window.location.href = "/admin"
       } else {
-        window.location.href = "/"
+        window.location.href = redirectUrl
       }
     } catch (error: any) {
       setError(error?.message || "Invalid email or password. Please check your credentials.")

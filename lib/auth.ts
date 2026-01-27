@@ -289,16 +289,22 @@ export async function signUp(email: string, password: string, name: string, role
 }
 
 // --- OAuth Provider Login ---
-export async function signInWithProvider(provider: 'google' | 'facebook'): Promise<{ error: any }> {
+export async function signInWithProvider(provider: 'google' | 'facebook', nextUrl?: string): Promise<{ error: any }> {
   if (!isSupabaseConfigured) {
     console.warn("Supabase not configured for OAuth")
     return { error: { message: "Social login requires Supabase configuration" } }
   }
 
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const callbackUrl = new URL(`${origin}/auth/callback`)
+  if (nextUrl) {
+    callbackUrl.searchParams.set('next', nextUrl)
+  }
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: provider,
     options: {
-      redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
+      redirectTo: callbackUrl.toString(),
     }
   })
 
