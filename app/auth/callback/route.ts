@@ -18,17 +18,75 @@ export async function GET(request: NextRequest) {
             },
             global: {
                 headers: {
-                    // Pass the cookie for proper session handling
                     cookie: request.headers.get("cookie") || "",
                 },
             },
         })
 
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
 
-        if (!error) {
-            // Redirect to dashboard or home after successful login
-            return NextResponse.redirect(`${requestUrl.origin}/`)
+        if (!error && session?.user) {
+            const userId = session.user.id
+            const email = session.user.email!
+
+            // Checks/Create Profile Logic (Server-Side)
+            let role = 'user' // Default
+
+            try {
+                // 1. Try to fetch existing profile
+                const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single()
+
+                if (profile) {
+                    role = profile.role
+                } else {
+                    // 2. Create if missing (Social Login first time)
+                    console.log("[Callback] Creating profile for new social user...")
+                    const name = session.user.user_metadata.full_name || session.user.user_metadata.name || email.split('@')[0]
+                    const avatar = session.user.user_metadata.avatar_url || session.user.user_metadata.picture
+
+                    const { error: insertError } = await supabase.from('profiles').insert({
+                        id: userId,
+                        email: email,
+                        name: name,
+                        avatar: avatar,
+                        role: 'user',
+                        verified: true,
+                        created_at: new Date().toISOString()
+                    })
+
+                    if (insertError) {
+                        console.error("[Callback] Profile creation failed:", insertError)
+                        // Should we abort? Maybe not, allow login but profile might be partial
+                    }
+                }
+            } catch (err) {
+                console.error("[Callback] Profile check error:", err)
+            }
+
+            // Create response with redirect
+            const response = NextResponse.redirect(`${requestUrl.origin}/`)
+
+            // Set Cookies for Middleware
+            response.cookies.set("auth_token", userId, {
+                path: "/",
+                maxAge: 86400, // 1 day
+                sameSite: "lax",
+                secure: process.env.NODE_ENV === "production"
+            })
+            response.cookies.set("user_email", email, {
+                path: "/",
+                maxAge: 86400,
+                sameSite: "lax",
+                secure: process.env.NODE_ENV === "production"
+            })
+            response.cookies.set("user_role", role, {
+                path: "/",
+                maxAge: 86400,
+                sameSite: "lax",
+                secure: process.env.NODE_ENV === "production"
+            })
+
+            return response
         }
     }
 

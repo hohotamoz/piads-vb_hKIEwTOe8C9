@@ -9,9 +9,9 @@ interface AuthContextType {
   isAuthenticated: boolean
   isAdmin: boolean
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<User>
   logout: () => void
-  signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>
+  signup: (email: string, password: string, name: string, role: UserRole) => Promise<User>
   updateUser: (userData: Partial<User>) => void
 }
 
@@ -22,10 +22,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       try {
         console.log("[v0] Checking authentication...")
-        const currentUser = getCurrentUser()
+        let currentUser = getCurrentUser()
+
+        // Hydrate from Cookies if LocalStorage is empty (e.g. after Social Login redirect)
+        if (!currentUser && typeof document !== "undefined") {
+          const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=')
+            acc[key] = value
+            return acc
+          }, {} as Record<string, string>)
+
+          const authToken = cookies['auth_token']
+          const userEmail = cookies['user_email']
+
+          if (authToken && userEmail) {
+            console.log("[v0] Hydrating session from cookies...", userEmail)
+            try {
+              // Fetch latest profile from Supabase
+              const { supabase } = await import("@/lib/supabase")
+              const { data: profile } = await supabase.from('profiles').select('*').eq('id', authToken).single()
+
+              if (profile) {
+                currentUser = {
+                  id: profile.id,
+                  email: profile.email,
+                  name: profile.name || "User",
+                  role: profile.role as UserRole,
+                  avatar: profile.avatar || undefined,
+                  verified: profile.verified,
+                  createdAt: new Date(profile.created_at),
+                  preferences: profile.preferences,
+                  stats: profile.stats,
+                  isMigrated: true
+                }
+                // Sync back to localStorage
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("currentUser", JSON.stringify(currentUser))
+                }
+              }
+            } catch (err) {
+              console.error("[v0] Cookie hydration failed:", err)
+            }
+          }
+        }
+
         console.log("[v0] Current user:", currentUser ? currentUser.email : "None")
         setUser(currentUser)
 
@@ -41,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("[v0] Auth check complete")
       }
     }
-    
+
     // Add small delay to prevent white screen
     const timer = setTimeout(checkAuth, 100)
     return () => clearTimeout(timer)
@@ -76,12 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = await signUp(email, password, name, role)
       console.log("[v0] Signup successful, user:", userData.email)
       setUser(userData)
-      
+
       if (typeof document !== "undefined") {
         document.cookie = `auth_token=${userData.id}; path=/; max-age=86400`
         document.cookie = `user_email=${userData.email}; path=/; max-age=86400`
       }
-      
+
       return userData
     } catch (error) {
       console.error("[v0] Signup error:", error)
