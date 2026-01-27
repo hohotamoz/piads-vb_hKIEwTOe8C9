@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
                 path: "/",
                 maxAge: 86400, // 1 day
                 sameSite: "lax" as const,
-                secure: process.env.NODE_ENV === "production",
+                secure: requestUrl.protocol === "https:",
                 httpOnly: false
             }
 
