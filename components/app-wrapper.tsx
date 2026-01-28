@@ -12,29 +12,25 @@ import { initAuthBridge } from "@/lib/auth"
 
 export function AppWrapper({ children }: { children: ReactNode }) {
   useEffect(() => {
-    // 1. Cleanup demo data
+    // ✅ 1. Cleanup demo data
     cleanupAllDemoData()
-    // 2. Init Auth Bridge (Sync Social Login)
-    // 2. Init Auth Bridge (Sync Social Login)
+
+    // ✅ 2. Init Auth Bridge (Sync Social Login)
     const cleanupAuthBridge = initAuthBridge()
 
-    return () => {
-      cleanupAuthBridge()
-    }
-
-    // 2. Check Supabase Connection
+    // ✅ 3. Check Supabase Connection & Migrate
     const checkConnection = async () => {
       if (!isSupabaseConfigured) {
         console.log("⚠️ Supabase is NOT configured. Running in offline mode.")
         return
       }
       try {
-        const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true })
+        const { error } = await supabase.from("profiles").select("count", { count: "exact", head: true })
         if (error) {
           console.error("❌ Supabase connection failed:", error.message)
         } else {
           console.log("✅ Supabase Connected Successfully!")
-          // 3. Trigger Migration
+          // Trigger Migration
           migrateLocalDataToSupabase()
         }
       } catch (e) {
@@ -43,6 +39,10 @@ export function AppWrapper({ children }: { children: ReactNode }) {
     }
 
     checkConnection()
+
+    return () => {
+      cleanupAuthBridge()
+    }
   }, [])
 
   return (

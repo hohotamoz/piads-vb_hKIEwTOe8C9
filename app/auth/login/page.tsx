@@ -35,21 +35,14 @@ export default function LoginPage() {
     }
   }, [])
 
-  const handleSocialLogin = async (provider: 'google' | 'facebook') => {
+  const handleSocialLogin = async (provider: "google" | "facebook") => {
     setIsLoading(true)
     setError("")
     try {
-      // Use Supabase client directly as requested for "Single Supabase Client" usage 
-      // where possible, or via the `supabase` export from lib.
-      // But we need to import it. I'll dynamically import or just assume imports are clear.
-      // Since `signInWithProvider` is in `lib/auth` and wraps `supabase.auth.signInWithOAuth`, 
-      // I will rely on that IF it's clean. 
-      // Let's modify `lib/auth`'s `signInWithProvider` to be clean too, or essentially
-      // just call it here.
-
+      // ✅ SINGLE OAUTH FLOW - Direct Supabase call only
       const { supabase } = await import("@/lib/supabase")
 
-      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+      const origin = typeof window !== "undefined" ? window.location.origin : ""
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -58,6 +51,7 @@ export default function LoginPage() {
       })
 
       if (error) throw error
+      // ✅ DO NOT manage state or redirect here - Supabase handles redirect automatically
     } catch (err: any) {
       setError(err?.message || `Failed to login with ${provider}`)
       setIsLoading(false)

@@ -8,6 +8,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('[v0] Supabase credentials not found. Database features will be disabled.')
 }
 
+// ✅ SINGLE CLIENT INSTANCE - Used throughout the entire app
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',
@@ -15,7 +16,7 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: false // Important: We handle session manually in AuthProvider
     }
   }
 )

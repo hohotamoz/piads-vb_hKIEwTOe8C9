@@ -103,7 +103,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - auth/callback (Auth Callback)
+     * - auth/callback (✅ ALLOW OAuth Callback routes)
      */
     "/((?!api|_next/static|_next/image|favicon.ico|auth/callback).*)",
   ],

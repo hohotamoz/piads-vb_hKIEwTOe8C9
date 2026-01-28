@@ -1,8 +1,7 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react"
 import type { User, UserRole } from "@/lib/auth"
-import { getCurrentUser, signIn, signOut, signUp, isCurrentUserAdmin } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 
 interface AuthContextType {
@@ -18,97 +17,137 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// ✅ SINGLE LISTENER FLAG - Prevents duplicate listeners
+let authListenerInitialized = false
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const unsubscribeRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
-    // 1. Get initial session
-    const getInitialSession = async () => {
+    let isMounted = true
+
+    const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
-          // Map to your User type
-          setUser(mapSupabaseUser(session.user))
-        } else {
-          setUser(null)
+        // ✅ STEP 1: Get initial session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (isMounted) {
+          if (session?.user) {
+            setUser(mapSupabaseUser(session.user))
+          } else {
+            setUser(null)
+          }
+          setIsLoading(false)
+        }
+
+        // ✅ STEP 2: Set up ONE listener (not multiple)
+        if (!authListenerInitialized) {
+          authListenerInitialized = true
+
+          const {
+            data: { subscription },
+          } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (isMounted) {
+              if (session?.user) {
+                setUser(mapSupabaseUser(session.user))
+              } else {
+                setUser(null)
+              }
+            }
+          })
+
+          unsubscribeRef.current = () => {
+            subscription.unsubscribe()
+            authListenerInitialized = false
+          }
         }
       } catch (error) {
-        console.error("Error getting session:", error)
-        setUser(null)
-      } finally {
-        setIsLoading(false)
+        console.error("[AuthProvider] Error initializing auth:", error)
+        if (isMounted) {
+          setUser(null)
+          setIsLoading(false)
+        }
       }
     }
 
-    getInitialSession()
-
-    // 2. Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        setUser(mapSupabaseUser(session.user))
-      } else {
-        setUser(null)
-      }
-      setIsLoading(false)
-    })
+    initializeAuth()
 
     return () => {
-      subscription.unsubscribe()
+      isMounted = false
+      // Cleanup subscription on unmount (but keep flag for re-mounts)
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current()
+        unsubscribeRef.current = null
+      }
     }
   }, [])
 
-  // Helper to map Supabase user to App user
+  // ✅ Helper to map Supabase user to App user
   const mapSupabaseUser = (sbUser: any): User => {
     return {
       id: sbUser.id,
       email: sbUser.email || "",
-      name: sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || "User",
-      role: sbUser.user_metadata?.role || "user", // Ensure role is in metadata or fetch profile if needed
+      name:
+        sbUser.user_metadata?.full_name ||
+        sbUser.user_metadata?.name ||
+        sbUser.email?.split("@")[0] ||
+        "User",
+      role: sbUser.user_metadata?.role || "user",
       avatar: sbUser.user_metadata?.avatar_url,
       verified: !!sbUser.email_confirmed_at,
-      createdAt: new Date(sbUser.created_at)
+      createdAt: new Date(sbUser.created_at),
     }
   }
 
   const login = async (email: string, password: string) => {
     setIsLoading(true)
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+      // State update happens via onAuthStateChange listener
+      return mapSupabaseUser(data.user)
+    } finally {
       setIsLoading(false)
-      throw error
     }
-    // State update happens in onAuthStateChange
-    return mapSupabaseUser(data.user)
   }
 
   const signup = async (email: string, password: string, name: string, role: UserRole) => {
     setIsLoading(true)
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-          role: role
-        }
-      }
-    })
-    if (error) {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            role: role,
+          },
+        },
+      })
+      if (error) throw error
+      if (data.user) return mapSupabaseUser(data.user)
+      throw new Error("Signup successful but no user returned")
+    } finally {
       setIsLoading(false)
-      throw error
     }
-    // If auto-confirm is off, user might be null here, but typically for this app it signs in
-    if (data.user) return mapSupabaseUser(data.user)
-    throw new Error("Signup successful but no user returned")
   }
 
   const logout = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    // Clear any custom cookies if used
-    if (typeof document !== "undefined") {
-      document.cookie = "auth_token=; path=/; max-age=0"
+    setIsLoading(true)
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+    } catch (error) {
+      console.error("[AuthProvider] Logout error:", error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -123,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin', // Simplify check
+        isAdmin: user?.role === "admin",
         isLoading,
         login,
         logout,
