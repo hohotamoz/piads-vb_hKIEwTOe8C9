@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { User, UserRole } from "@/lib/auth"
 import { getCurrentUser, signIn, signOut, signUp, isCurrentUserAdmin } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
 
 interface AuthContextType {
   user: User | null
@@ -22,152 +23,98 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const checkAuth = async () => {
+    // 1. Get initial session
+    const getInitialSession = async () => {
       try {
-        console.log("[v0] Checking authentication...")
-        let currentUser = getCurrentUser()
-
-        // 1. If no local user, try hydration from cookies (Critical for Social Login redirects)
-        if (!currentUser && typeof document !== "undefined") {
-          const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-            const [key, value] = cookie.trim().split('=')
-            acc[key] = value
-            return acc
-          }, {} as Record<string, string>)
-
-          const authToken = cookies['auth_token']
-
-          if (authToken) {
-            console.log("[v0] Found auth token in cookies, hydrating session...")
-            try {
-              // Fetch latest profile from Supabase
-              const { supabase } = await import("@/lib/supabase")
-              const { data: profile } = await supabase.from('profiles').select('*').eq('id', authToken).single()
-
-              if (profile) {
-                currentUser = {
-                  id: profile.id,
-                  email: profile.email,
-                  name: profile.name || "User",
-                  role: profile.role as UserRole,
-                  avatar: profile.avatar || undefined,
-                  verified: profile.verified,
-                  createdAt: new Date(profile.created_at),
-                  preferences: profile.preferences,
-                  stats: profile.stats,
-                  isMigrated: true
-                }
-                // Sync back to localStorage for persistence
-                if (typeof window !== "undefined") {
-                  localStorage.setItem("currentUser", JSON.stringify(currentUser))
-                  // Force cookie refresh
-                  document.cookie = `auth_token=${currentUser.id}; path=/; max-age=86400`
-                  document.cookie = `user_email=${currentUser.email}; path=/; max-age=86400`
-                }
-              }
-            } catch (err) {
-              console.error("[v0] Cookie hydration failed:", err)
-            }
-          }
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          // Map to your User type
+          setUser(mapSupabaseUser(session.user))
+        } else {
+          setUser(null)
         }
-
-        console.log("[v0] Current user:", currentUser ? currentUser.email : "None")
-        setUser(currentUser)
       } catch (error) {
-        console.error("[v0] Auth check error:", error)
+        console.error("Error getting session:", error)
         setUser(null)
       } finally {
         setIsLoading(false)
-        console.log("[v0] Auth check complete")
       }
     }
 
-    // Subscribe to Supabase Auth Changes (Fix for Race Conditions)
-    const { supabase } = require("@/lib/supabase") // Dynamic require to avoid build issues if env is missing
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
-      console.log(`[v0] Supabase Auth Event: ${event}`)
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        // Give time for initAuthBridge to write to localStorage if needed, or just fetch directly
-        setTimeout(checkAuth, 200)
-      } else if (event === 'SIGNED_OUT') {
+    getInitialSession()
+
+    // 2. Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        setUser(mapSupabaseUser(session.user))
+      } else {
         setUser(null)
-        if (typeof document !== "undefined") {
-          document.cookie = "auth_token=; path=/; max-age=0"
-          document.cookie = "user_email=; path=/; max-age=0"
-        }
       }
+      setIsLoading(false)
     })
 
-    // Immediate check + short delay fallback
-    checkAuth()
-    const timer = setTimeout(checkAuth, 500) // Retry after 500ms to catch race conditions
-
     return () => {
-      clearTimeout(timer)
-      authListener.subscription.unsubscribe()
+      subscription.unsubscribe()
     }
   }, [])
 
-  const login = async (email: string, password: string) => {
-    try {
-      setIsLoading(true)
-      const userData = await signIn(email, password)
-      if (userData) {
-        setUser(userData)
-        if (typeof document !== "undefined") {
-          document.cookie = `auth_token=${userData.id}; path=/; max-age=86400`
-          document.cookie = `user_email=${userData.email}; path=/; max-age=86400`
-        }
-        return userData
-      } else {
-        throw new Error("Invalid credentials")
-      }
-    } catch (error) {
-      console.error("Login error in provider:", error)
-      throw error
-    } finally {
-      setIsLoading(false)
+  // Helper to map Supabase user to App user
+  const mapSupabaseUser = (sbUser: any): User => {
+    return {
+      id: sbUser.id,
+      email: sbUser.email || "",
+      name: sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || "User",
+      role: sbUser.user_metadata?.role || "user", // Ensure role is in metadata or fetch profile if needed
+      avatar: sbUser.user_metadata?.avatar_url,
+      verified: !!sbUser.email_confirmed_at,
+      createdAt: new Date(sbUser.created_at)
     }
+  }
+
+  const login = async (email: string, password: string) => {
+    setIsLoading(true)
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      setIsLoading(false)
+      throw error
+    }
+    // State update happens in onAuthStateChange
+    return mapSupabaseUser(data.user)
   }
 
   const signup = async (email: string, password: string, name: string, role: UserRole) => {
-    try {
-      console.log("[v0] Starting signup process...")
-      setIsLoading(true)
-      const userData = await signUp(email, password, name, role)
-      console.log("[v0] Signup successful, user:", userData.email)
-      setUser(userData)
-
-      if (typeof document !== "undefined") {
-        document.cookie = `auth_token=${userData.id}; path=/; max-age=86400`
-        document.cookie = `user_email=${userData.email}; path=/; max-age=86400`
+    setIsLoading(true)
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+          role: role
+        }
       }
-
-      return userData
-    } catch (error) {
-      console.error("[v0] Signup error:", error)
-      throw error
-    } finally {
+    })
+    if (error) {
       setIsLoading(false)
+      throw error
     }
+    // If auto-confirm is off, user might be null here, but typically for this app it signs in
+    if (data.user) return mapSupabaseUser(data.user)
+    throw new Error("Signup successful but no user returned")
   }
 
-  const logout = () => {
-    signOut()
+  const logout = async () => {
+    await supabase.auth.signOut()
     setUser(null)
+    // Clear any custom cookies if used
     if (typeof document !== "undefined") {
       document.cookie = "auth_token=; path=/; max-age=0"
-      document.cookie = "user_email=; path=/; max-age=0"
     }
   }
 
   const updateUser = (userData: Partial<User>) => {
     if (user) {
-      const updatedUser = { ...user, ...userData }
-      setUser(updatedUser)
-      if (typeof window !== "undefined") {
-        localStorage.setItem("currentUser", JSON.stringify(updatedUser))
-      }
+      setUser({ ...user, ...userData })
     }
   }
 
@@ -176,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
-        isAdmin: isCurrentUserAdmin(),
+        isAdmin: user?.role === 'admin', // Simplify check
         isLoading,
         login,
         logout,

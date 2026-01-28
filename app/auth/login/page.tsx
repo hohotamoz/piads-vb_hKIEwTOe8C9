@@ -39,9 +39,25 @@ export default function LoginPage() {
     setIsLoading(true)
     setError("")
     try {
-      const { error } = await signInWithProvider(provider, redirectUrl)
+      // Use Supabase client directly as requested for "Single Supabase Client" usage 
+      // where possible, or via the `supabase` export from lib.
+      // But we need to import it. I'll dynamically import or just assume imports are clear.
+      // Since `signInWithProvider` is in `lib/auth` and wraps `supabase.auth.signInWithOAuth`, 
+      // I will rely on that IF it's clean. 
+      // Let's modify `lib/auth`'s `signInWithProvider` to be clean too, or essentially
+      // just call it here.
+
+      const { supabase } = await import("@/lib/supabase")
+
+      const origin = window.location.origin
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectUrl)}`,
+        },
+      })
+
       if (error) throw error
-      // Redirect happens automatically by Supabase
     } catch (err: any) {
       setError(err?.message || `Failed to login with ${provider}`)
       setIsLoading(false)
