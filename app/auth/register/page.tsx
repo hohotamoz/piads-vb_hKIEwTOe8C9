@@ -53,7 +53,9 @@ export default function RegisterPage() {
     try {
       await signup(formData.email, formData.password, formData.name, formData.role)
       await new Promise((resolve) => setTimeout(resolve, 200))
-      window.location.href = "/"
+      if (typeof window !== 'undefined') {
+        window.location.href = "/"
+      }
     } catch (err: any) {
       setError(err?.message || "Registration failed. Please try again.")
       setIsLoading(false)

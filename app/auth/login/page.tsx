@@ -49,7 +49,7 @@ export default function LoginPage() {
 
       const { supabase } = await import("@/lib/supabase")
 
-      const origin = window.location.origin
+      const origin = typeof window !== 'undefined' ? window.location.origin : ''
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -73,10 +73,12 @@ export default function LoginPage() {
       await login(email, password)
 
       const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}")
-      if (currentUser && currentUser.role === "admin") {
-        window.location.href = "/admin"
-      } else {
-        window.location.href = redirectUrl
+      if (typeof window !== 'undefined') {
+        if (currentUser && currentUser.role === "admin") {
+          window.location.href = "/admin"
+        } else {
+          window.location.href = redirectUrl
+        }
       }
     } catch (error: any) {
       setError(error?.message || "Invalid email or password. Please check your credentials.")

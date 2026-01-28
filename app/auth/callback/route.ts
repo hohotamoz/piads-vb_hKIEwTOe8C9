@@ -48,20 +48,28 @@ export async function GET(request: NextRequest) {
                 console.error("[Callback] Profile check error:", err)
             }
 
-            // Create response with redirect
+            // Create response with redirect to processing page
             const next = requestUrl.searchParams.get('next') || '/'
-            const response = NextResponse.redirect(`${requestUrl.origin}${next}`)
+            const response = NextResponse.redirect(`${requestUrl.origin}/auth/callback/processing?next=${encodeURIComponent(next)}`)
 
-            // Set Cookies for Middleware and Client Hydration
-            // httpOnly must be false so AuthProvider can read it via document.cookie
+            // Set temporary non-httpOnly cookie with session for client-side handler
+            // SECURITY NOTE: This is a temporary solution for testing only.
+            // In production (B2), use httpOnly cookies and server-side session management.
+            const sessionData = {
+                access_token: session.access_token,
+                refresh_token: session.refresh_token,
+                expires_at: session.expires_at
+            }
+            
             const cookieOptions = {
                 path: "/",
-                maxAge: 86400, // 1 day
+                maxAge: 3600, // 1 hour - short-lived for temp use only
                 sameSite: "lax" as const,
                 secure: requestUrl.protocol === "https:",
-                httpOnly: false
+                httpOnly: false // Non-httpOnly for client-side reading (TEMPORARY ONLY)
             }
 
+            response.cookies.set("supabase_session", JSON.stringify(sessionData), cookieOptions)
             response.cookies.set("auth_token", userId, cookieOptions)
             response.cookies.set("user_email", email, cookieOptions)
             response.cookies.set("user_role", role, cookieOptions)
