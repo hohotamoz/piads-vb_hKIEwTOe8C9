@@ -14,7 +14,7 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-key',
   {
     auth: {
-      persistSession: true,
+      persistSession: false, // Let AuthProvider manage session state
       autoRefreshToken: true,
       detectSessionInUrl: false // Important: We handle session manually in AuthProvider
     }

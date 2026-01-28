@@ -9,8 +9,11 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get("code")
   const next = requestUrl.searchParams.get("next") || "/"
 
+  console.log("[OAuth Callback] Processing callback...", { code: !!code, next })
+
   // ✅ STEP 1: If no code, redirect to login
   if (!code) {
+    console.error("[OAuth Callback] No code provided")
     return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=no_code`)
   }
 
@@ -30,6 +33,8 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    console.log("[OAuth Callback] Exchanging code for session...")
+
     // ✅ STEP 3: Exchange OAuth code for session
     const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
 
@@ -37,6 +42,8 @@ export async function GET(request: NextRequest) {
       console.error("[OAuth Callback] Session exchange error:", error?.message)
       return NextResponse.redirect(`${requestUrl.origin}/auth/login?error=session_exchange_failed`)
     }
+
+    console.log("[OAuth Callback] Code exchanged successfully, setting cookie...")
 
     // ✅ STEP 4: Store session in a temporary non-httpOnly cookie for client-side handler
     // (Short-lived, 1 hour, for this specific OAuth flow)
@@ -56,6 +63,7 @@ export async function GET(request: NextRequest) {
       httpOnly: false, // Client-side reading only (temporary)
     })
 
+    console.log("[OAuth Callback] Redirecting to processing page...")
     return response
   } catch (error) {
     console.error("[OAuth Callback] Unexpected error:", error)

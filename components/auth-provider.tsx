@@ -17,9 +17,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// ✅ SINGLE LISTENER FLAG - Prevents duplicate listeners
-let authListenerInitialized = false
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -30,40 +27,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const initializeAuth = async () => {
       try {
+        console.log("[AuthProvider] Initializing authentication...")
+        
         // ✅ STEP 1: Get initial session
         const {
           data: { session },
         } = await supabase.auth.getSession()
 
+        console.log("[AuthProvider] Initial session check:", session ? "User found" : "No user")
+
         if (isMounted) {
           if (session?.user) {
             setUser(mapSupabaseUser(session.user))
+            console.log("[AuthProvider] User set from initial session:", session.user.email)
           } else {
             setUser(null)
           }
-          setIsLoading(false)
         }
 
-        // ✅ STEP 2: Set up ONE listener (not multiple)
-        if (!authListenerInitialized) {
-          authListenerInitialized = true
-
-          const {
-            data: { subscription },
-          } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (isMounted) {
-              if (session?.user) {
-                setUser(mapSupabaseUser(session.user))
-              } else {
-                setUser(null)
-              }
+        // ✅ STEP 2: Set up ONE listener per mount
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange(async (_event, session) => {
+          console.log("[AuthProvider] Auth state changed:", _event, session ? "Session" : "No session")
+          
+          if (isMounted) {
+            if (session?.user) {
+              setUser(mapSupabaseUser(session.user))
+              console.log("[AuthProvider] User updated:", session.user.email)
+            } else {
+              setUser(null)
+              console.log("[AuthProvider] User cleared")
             }
-          })
-
-          unsubscribeRef.current = () => {
-            subscription.unsubscribe()
-            authListenerInitialized = false
           }
+        })
+
+        unsubscribeRef.current = () => {
+          console.log("[AuthProvider] Cleaning up subscription")
+          subscription.unsubscribe()
+        }
+
+        if (isMounted) {
+          setIsLoading(false)
         }
       } catch (error) {
         console.error("[AuthProvider] Error initializing auth:", error)
@@ -78,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false
-      // Cleanup subscription on unmount (but keep flag for re-mounts)
+      // Cleanup subscription on unmount
       if (unsubscribeRef.current) {
         unsubscribeRef.current()
         unsubscribeRef.current = null

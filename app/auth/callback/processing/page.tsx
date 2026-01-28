@@ -12,6 +12,8 @@ export default function OAuthCallbackProcessingPage() {
   useEffect(() => {
     const handleCallbackSession = async () => {
       try {
+        console.log("[Callback Processing] Starting session processing...", { next })
+        
         // ✅ STEP 1: Get session from cookie (set by /auth/callback/route.ts)
         const sessionCookie = document.cookie
           .split("; ")
@@ -23,9 +25,13 @@ export default function OAuthCallbackProcessingPage() {
           return
         }
 
+        console.log("[Callback Processing] Found session cookie")
+
         // ✅ STEP 2: Parse session data
         const sessionJson = decodeURIComponent(sessionCookie.split("=")[1])
         const sessionData = JSON.parse(sessionJson)
+
+        console.log("[Callback Processing] Parsed session data, setting in Supabase...")
 
         // ✅ STEP 3: Set session in Supabase Auth
         const { error } = await supabase.auth.setSession({
@@ -35,12 +41,14 @@ export default function OAuthCallbackProcessingPage() {
 
         // ✅ STEP 4: Clean up temporary cookie
         document.cookie = "supabase_session=; Max-Age=0; path=/"
+        console.log("[Callback Processing] Cleaned up session cookie")
 
         // ✅ STEP 5: Redirect or error
         if (error) {
           console.error("[Callback Processing] Session set error:", error.message)
           router.replace(`/auth/login?error=${encodeURIComponent(error.message)}`)
         } else {
+          console.log("[Callback Processing] Session set successfully, redirecting to:", next)
           // ✅ SUCCESS: Redirect to desired page
           // Let router handle redirect after auth context updates
           router.replace(next)
