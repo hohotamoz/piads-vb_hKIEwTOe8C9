@@ -58,9 +58,9 @@ export interface PiPaymentResult {
 class PiSDKService {
   private initialized = false
   private user: PiUser | null = null
-  private sandbox = true
+  private sandbox = false // Default to false for Testnet (not sandbox)
 
-  async initialize(sandbox = true): Promise<void> {
+  async initialize(sandbox = false): Promise<void> {
     if (this.initialized) return
 
     this.sandbox = sandbox
@@ -101,7 +101,7 @@ class PiSDKService {
     try {
       const scopes = ["username", "payments"]
       const auth = await window.Pi.authenticate(scopes, (payment) => {
-        console.log("[v0] Incomplete payment found:", payment)
+        console.log("[Pi SDK] Incomplete payment found:", payment)
       })
 
       this.user = {
@@ -110,13 +110,9 @@ class PiSDKService {
         accessToken: auth.accessToken,
       }
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("pi_user", JSON.stringify(this.user))
-      }
-
       return this.user
     } catch (error) {
-      console.error("[v0] Pi authentication failed:", error)
+      console.error("[Pi SDK] Authentication failed:", error)
       throw error
     }
   }
@@ -130,24 +126,24 @@ class PiSDKService {
       throw new Error("User not authenticated")
     }
 
-    console.log("[v0] Creating payment with Pi SDK:", paymentData)
+    console.log("[Pi SDK] Creating payment:", paymentData)
 
     return new Promise((resolve, reject) => {
       window.Pi!.createPayment(paymentData, {
         onReadyForServerApproval: async (paymentId) => {
-          console.log("[v0] Payment ready for server approval:", paymentId)
+          console.log("[Pi SDK] Payment ready for server approval:", paymentId)
           try {
             const approved = await this.approvePayment(paymentId)
             if (!approved) {
               reject(new Error("Payment approval failed"))
             }
           } catch (error) {
-            console.error("[v0] Approval error:", error)
+            console.error("[Pi SDK] Approval error:", error)
             reject(error)
           }
         },
         onReadyForServerCompletion: async (paymentId, txid) => {
-          console.log("[v0] Payment ready for server completion:", paymentId, txid)
+          console.log("[Pi SDK] Payment ready for server completion:", paymentId, txid)
           try {
             const completed = await this.completePayment(paymentId, txid)
             if (completed) {
@@ -160,19 +156,19 @@ class PiSDKService {
               reject(new Error("Payment completion failed"))
             }
           } catch (error) {
-            console.error("[v0] Completion error:", error)
+            console.error("[Pi SDK] Completion error:", error)
             reject(error)
           }
         },
         onCancel: (paymentId) => {
-          console.log("[v0] Payment cancelled:", paymentId)
+          console.log("[Pi SDK] Payment cancelled:", paymentId)
           resolve({
             paymentId,
             status: "cancelled",
           })
         },
         onError: (error, payment) => {
-          console.error("[v0] Payment error:", error, payment)
+          console.error("[Pi SDK] Payment error:", error, payment)
           reject(error)
         },
       })
@@ -181,69 +177,44 @@ class PiSDKService {
 
   private async approvePayment(paymentId: string): Promise<boolean> {
     try {
-      console.log("[v0] Requesting payment approval from backend:", paymentId)
       const response = await fetch("/api/payments/approve", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.user?.accessToken}`,
         },
         body: JSON.stringify({ paymentId }),
       })
 
-      const result = await response.json()
-      console.log("[v0] Backend approval response:", result)
       return response.ok
     } catch (error) {
-      console.error("[v0] Payment approval error:", error)
+      console.error("[Pi SDK] Payment approval error:", error)
       return false
     }
   }
 
   private async completePayment(paymentId: string, txid: string): Promise<boolean> {
     try {
-      console.log("[v0] Requesting payment completion from backend:", paymentId, txid)
       const response = await fetch("/api/payments/complete", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.user?.accessToken}`,
         },
         body: JSON.stringify({ paymentId, txid }),
       })
 
-      const result = await response.json()
-      console.log("[v0] Backend completion response:", result)
       return response.ok
     } catch (error) {
-      console.error("[v0] Payment completion error:", error)
+      console.error("[Pi SDK] Payment completion error:", error)
       return false
     }
   }
 
   getUser(): PiUser | null {
-    if (this.user) return this.user
-
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("pi_user")
-      if (stored) {
-        try {
-          this.user = JSON.parse(stored)
-          return this.user
-        } catch (e) {
-          localStorage.removeItem("pi_user")
-        }
-      }
-    }
-
-    return null
+    return this.user
   }
 
   logout(): void {
     this.user = null
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("pi_user")
-    }
   }
 
   isAuthenticated(): boolean {

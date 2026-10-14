@@ -1,23 +1,30 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
+import { getSession } from "@/lib/pi-session"
+import { verifyPaymentWithPiAPI } from "@/lib/pi-payment-verification"
 
-export async function GET(request: NextRequest, { params }: { params: { paymentId: string } }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ paymentId: string }> }
+) {
   try {
-    const { paymentId } = params
+    // Verify user session
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
-    console.log("[v0] Verifying payment:", paymentId)
+    const { paymentId } = await params
 
-    // This would query your backend database or Pi Network API
+    if (!paymentId || typeof paymentId !== "string" || paymentId.length < 10) {
+      return NextResponse.json({ error: "Invalid payment ID" }, { status: 400 })
+    }
 
-    // Simulate verification
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    // Verify payment with Pi Platform API
+    const result = await verifyPaymentWithPiAPI(paymentId)
 
-    return NextResponse.json({
-      paymentId,
-      status: "completed",
-      verified: true,
-    })
+    return NextResponse.json(result)
   } catch (error) {
-    console.error("[v0] Payment verification error:", error)
-    return NextResponse.json({ error: "Failed to verify payment" }, { status: 500 })
+    console.error("Payment verification error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

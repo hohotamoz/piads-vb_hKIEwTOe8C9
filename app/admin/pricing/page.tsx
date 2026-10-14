@@ -21,7 +21,7 @@ import {
 } from "@/lib/pi-payment"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-const ADMIN_EMAIL = "hohotamoz200@gmail.com"
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hohotamoz200@gmail.com"
 
 export default function AdminPricingPage() {
   const router = useRouter()

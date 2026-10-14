@@ -1,39 +1,72 @@
 import { NextResponse } from "next/server"
+import { getSession } from "@lib/pi-session"
 
 export async function POST(request: Request) {
   try {
-    const { paymentId, txid } = await request.json()
-    const authHeader = request.headers.get("authorization")
-
-    if (!authHeader?.startsWith("Bearer ")) {
+    // 1. Verify user session
+    const session = await getSession()
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const accessToken = authHeader.substring(7)
+    const { paymentId, txid } = await request.json()
 
-    // Verify with Pi Network backend
-    const piBackendUrl = process.env.PI_API_URL || "https://api.minepi.com"
-    const response = await fetch(`${piBackendUrl}/v2/payments/${paymentId}/complete`, {
+    if (!paymentId || !txid) {
+      return NextResponse.json({ error: "Payment ID and transaction ID required" }, { status: 400 })
+    }
+
+    // 2. Validate inputs
+    if (typeof paymentId !== "string" || paymentId.length < 10) {
+      return NextResponse.json({ error: "Invalid payment ID" }, { status: 400 })
+    }
+
+    if (typeof txid !== "string" || txid.length < 10) {
+      return NextResponse.json({ error: "Invalid transaction ID" }, { status: 400 })
+    }
+
+    // 3. Call Pi Platform API to complete payment
+    const piApiUrl = process.env.PI_API_URL || "https://api.minepi.com"
+    const apiKey = process.env.PI_API_KEY
+
+    if (!apiKey) {
+      console.error("[Payments] PI_API_KEY not configured")
+      return NextResponse.json({ error: "Payment service not configured" }, { status: 500 })
+    }
+
+    const response = await fetch(`${piApiUrl}/v2/payments/${paymentId}/complete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Key ${process.env.PI_API_KEY}`,
+        Authorization: `Key ${apiKey}`,
       },
       body: JSON.stringify({ txid }),
     })
 
     if (!response.ok) {
-      return NextResponse.json({ error: "Payment completion failed" }, { status: 400 })
+      const errorData = await response.json().catch(() => ({}))
+      console.error("[Payments] Completion failed:", response.status, errorData)
+      return NextResponse.json(
+        { error: errorData.error || "Payment completion failed" },
+        { status: response.status }
+      )
     }
 
     const data = await response.json()
 
-    // Store payment in database
-    // In production, save to your database here
+    // 4. Verify the payment is actually completed
+    if (!data.status?.developer_completed) {
+      return NextResponse.json(
+        { error: "Payment not completed" },
+        { status: 400 }
+      )
+    }
 
-    return NextResponse.json({ success: true, payment: data })
+    return NextResponse.json({
+      success: true,
+      payment: data,
+    })
   } catch (error) {
-    console.error("Payment completion error:", error)
+    console.error("[Payments] Completion error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

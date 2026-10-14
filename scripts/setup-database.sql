@@ -102,3 +102,88 @@ create trigger on_auth_user_created
 -- insert into storage.buckets (id, name) values ('ad-images', 'ad-images') on conflict do nothing;
 -- create policy "Public Access" on storage.objects for select using ( bucket_id = 'ad-images' );
 -- create policy "Auth Upload" on storage.objects for insert with check ( bucket_id = 'ad-images' and auth.role() = 'authenticated' );
+
+-- 5. MESSAGES Table
+create table if not exists public.messages (
+  id uuid primary key default uuid_generate_v4(),
+  ad_id uuid references public.ads(id) on delete cascade,
+  sender_id uuid references public.profiles(id) on delete cascade not null,
+  receiver_id uuid references public.profiles(id) on delete cascade not null,
+  content text not null,
+  is_read boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.messages enable row level security;
+
+create policy "Users can view their own messages"
+on public.messages for select using (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+create policy "Users can send messages"
+on public.messages for insert with check (auth.uid() = sender_id);
+
+create policy "Users can mark messages as read"
+on public.messages for update using (auth.uid() = receiver_id);
+
+-- 6. NOTIFICATIONS Table
+create table if not exists public.notifications (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  type text not null,
+  title text not null,
+  message text not null,
+  is_read boolean default false,
+  link text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.notifications enable row level security;
+
+create policy "Users can view own notifications"
+on public.notifications for select using (auth.uid() = user_id);
+
+create policy "System can create notifications"
+on public.notifications for insert with check (true);
+
+create policy "Users can mark own notifications as read"
+on public.notifications for update using (auth.uid() = user_id);
+
+-- 7. REVIEWS Table
+create table if not exists public.reviews (
+  id uuid primary key default uuid_generate_v4(),
+  ad_id uuid references public.ads(id) on delete cascade not null,
+  reviewer_id uuid references public.profiles(id) on delete cascade not null,
+  rating integer check (rating >= 1 AND rating <= 5) not null,
+  comment text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(ad_id, reviewer_id)
+);
+
+alter table public.reviews enable row level security;
+
+create policy "Reviews are viewable by everyone"
+on public.reviews for select using (true);
+
+create policy "Authenticated users can create reviews"
+on public.reviews for insert with check (auth.uid() = reviewer_id);
+
+-- 8. STORAGE BUCKET for ad images
+insert into storage.buckets (id, name, public) 
+values ('ad-images', 'ad-images', true) 
+on conflict (id) do nothing;
+
+create policy "Public Access to ad images"
+on storage.objects for select 
+using (bucket_id = 'ad-images');
+
+create policy "Authenticated users can upload ad images"
+on storage.objects for insert
+with check (bucket_id = 'ad-images' AND auth.role() = 'authenticated');
+
+create policy "Users can update their own ad images"
+on storage.objects for update
+using (bucket_id = 'ad-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "Users can delete their own ad images"
+on storage.objects for delete
+using (bucket_id = 'ad-images' AND auth.uid()::text = (storage.foldername(name))[1]);

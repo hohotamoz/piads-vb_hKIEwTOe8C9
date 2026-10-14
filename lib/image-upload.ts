@@ -1,4 +1,4 @@
-// Image upload utility for handling real image files
+import { supabase, isSupabaseConfigured } from './supabase'
 
 export interface ImageUploadResult {
   success: boolean
@@ -7,7 +7,7 @@ export interface ImageUploadResult {
 }
 
 /**
- * Convert file to base64 string for storage
+ * Convert file to base64 string for fallback storage
  */
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -25,161 +25,78 @@ export function fileToBase64(file: File): Promise<string> {
  * Validate image file
  */
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
-  // Check file type
   const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
   if (!validTypes.includes(file.type)) {
-    return {
-      valid: false,
-      error: "Invalid file type. Please upload JPEG, PNG, WebP, or GIF images.",
-    }
+    return { valid: false, error: "Invalid file type. Please upload JPEG, PNG, WebP, or GIF images." }
   }
 
-  // Check file size (max 5MB)
   const maxSize = 5 * 1024 * 1024 // 5MB
   if (file.size > maxSize) {
-    return {
-      valid: false,
-      error: "File size too large. Maximum size is 5MB.",
-    }
+    return { valid: false, error: "File too large. Maximum size is 5MB." }
   }
 
   return { valid: true }
 }
 
 /**
- * Compress and resize image
+ * Upload image to Supabase Storage or fallback to base64
  */
-export async function compressImage(file: File, maxWidth = 1200, quality = 0.85): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    
-    reader.onerror = () => reject(new Error("Could not read file"))
-    
-    reader.onload = (e) => {
-      const img = new Image()
-      
-      img.onerror = () => reject(new Error("Could not load image"))
-      
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas")
-          let { width, height } = img
+export async function uploadImage(file: File, userId: string): Promise<ImageUploadResult> {
+  const validation = validateImageFile(file)
+  if (!validation.valid) {
+    return { success: false, error: validation.error }
+  }
 
-          // Calculate new dimensions maintaining aspect ratio
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width)
-            width = maxWidth
-          }
+  // Try Supabase Storage first
+  if (isSupabaseConfigured) {
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
 
-          canvas.width = width
-          canvas.height = height
+      const { data, error } = await supabase.storage
+        .from('ad-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
 
-          const ctx = canvas.getContext("2d", { alpha: true })
-          if (!ctx) {
-            reject(new Error("Could not get canvas context"))
-            return
-          }
+      if (!error && data) {
+        const { data: urlData } = supabase.storage
+          .from('ad-images')
+          .getPublicUrl(data.path)
 
-          // Use better image smoothing
-          ctx.imageSmoothingEnabled = true
-          ctx.imageSmoothingQuality = "high"
-          
-          // Draw image
-          ctx.drawImage(img, 0, 0, width, height)
-
-          // Convert to blob
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                resolve(blob)
-              } else {
-                reject(new Error("Could not compress image"))
-              }
-            },
-            file.type === "image/png" ? "image/png" : "image/jpeg",
-            quality
-          )
-        } catch (error) {
-          reject(error)
-        }
+        return { success: true, url: urlData.publicUrl }
       }
       
-      img.src = e.target?.result as string
+      console.warn('[image-upload] Supabase storage upload failed, falling back to base64:', error?.message)
+    } catch (err) {
+      console.warn('[image-upload] Supabase storage error, falling back to base64:', err)
     }
-    
-    reader.readAsDataURL(file)
-  })
-}
+  }
 
-/**
- * Upload image and return base64 URL
- */
-export async function uploadImage(file: File): Promise<ImageUploadResult> {
+  // Fallback: convert to base64
   try {
-    // Validate file
-    const validation = validateImageFile(file)
-    if (!validation.valid) {
-      return {
-        success: false,
-        error: validation.error,
-      }
-    }
-
-    // Compress image with timeout
-    const compressPromise = compressImage(file)
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("Image processing timeout")), 30000)
-    })
-
-    const compressedBlob = await Promise.race([compressPromise, timeoutPromise])
-    const compressedFile = new File([compressedBlob], file.name, { 
-      type: file.type === "image/png" ? "image/png" : "image/jpeg" 
-    })
-
-    // Convert to base64
-    const base64 = await fileToBase64(compressedFile)
-
-    // Verify base64 string is valid
-    if (!base64 || !base64.startsWith('data:image')) {
-      throw new Error("Invalid image data")
-    }
-
-    return {
-      success: true,
-      url: base64,
-    }
-  } catch (error) {
-    console.error("Upload error:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Failed to upload image",
-    }
+    const base64 = await fileToBase64(file)
+    return { success: true, url: base64 }
+  } catch (err) {
+    return { success: false, error: 'Failed to process image' }
   }
 }
 
 /**
- * Upload multiple images
+ * Delete image from Supabase Storage
  */
-export async function uploadMultipleImages(files: File[]): Promise<ImageUploadResult[]> {
-  const uploadPromises = files.map((file) => uploadImage(file))
-  return Promise.all(uploadPromises)
-}
+export async function deleteImage(url: string): Promise<void> {
+  if (!isSupabaseConfigured || url.startsWith('data:')) return
 
-/**
- * Get image dimensions
- */
-export function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        resolve({ width: img.width, height: img.height })
-      }
-      img.onerror = () => reject(new Error("Could not load image"))
-      img.src = e.target?.result as string
+  try {
+    // Extract path from URL
+    const urlObj = new URL(url)
+    const pathParts = urlObj.pathname.split('/ad-images/')
+    if (pathParts.length > 1) {
+      await supabase.storage.from('ad-images').remove([pathParts[1]])
     }
-    reader.onerror = () => reject(new Error("Could not read file"))
-    reader.readAsDataURL(file)
-  })
+  } catch (err) {
+    console.warn('[image-upload] Failed to delete image:', err)
+  }
 }

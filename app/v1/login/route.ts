@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const ADMIN_EMAIL = "hohotamoz200@gmail.com"
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hohotamoz200@gmail.com"
 
 export async function POST(request: NextRequest) {
   console.log("[v0] 🔄 Pi Backend Proxy: Login request received")

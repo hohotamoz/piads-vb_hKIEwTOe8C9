@@ -4,7 +4,8 @@ import { verifyCredentials as verifyLocalCredentials, storeCredentials as storeL
 export type UserRole = "user" | "advertiser" | "store" | "developer" | "admin"
 
 // Support both .com and .cm for admin email (user typo tolerance)
-export const ADMIN_EMAILS = ["hohotamoz200@gmail.com", "hohotamoz200@gmail.cm"]
+const _adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hohotamoz200@gmail.com"
+export const ADMIN_EMAILS = [_adminEmail, _adminEmail.replace(".com", ".cm")]
 export const ADMIN_EMAIL = ADMIN_EMAILS[0]
 
 export interface User {

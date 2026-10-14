@@ -86,120 +86,24 @@ let subscriptionPlansData: PricingPlan[] = [
   },
 ]
 
-if (typeof window !== "undefined") {
-  const savedPricingPlans = localStorage.getItem("pricingPlans")
-  const savedSubscriptionPlans = localStorage.getItem("subscriptionPlans")
-
-  if (savedPricingPlans) {
-    try {
-      pricingPlansData = JSON.parse(savedPricingPlans)
-    } catch (e) {
-      console.error("[v0] Failed to load pricing plans:", e)
-    }
-  }
-
-  if (savedSubscriptionPlans) {
-    try {
-      subscriptionPlansData = JSON.parse(savedSubscriptionPlans)
-    } catch (e) {
-      console.error("[v0] Failed to load subscription plans:", e)
-    }
-  }
-}
-
 export const getPricingPlans = (): PricingPlan[] => {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("pricingPlans")
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (e) {
-        console.error("Failed to parse pricing plans:", e)
-      }
-    }
-  }
   return pricingPlansData
 }
 
 export const getSubscriptionPlans = (): PricingPlan[] => {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("subscriptionPlans")
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (e) {
-        console.error("[v0] Failed to parse subscription plans:", e)
-      }
-    }
-  }
   return subscriptionPlansData
 }
 
-export const updatePricingPlan = (planId: string, updates: Partial<PricingPlan>): boolean => {
-  const plans = getPricingPlans()
-  const index = plans.findIndex((p) => p.id === planId)
-
-  if (index === -1) return false
-
-  plans[index] = { ...plans[index], ...updates }
-
-  if (typeof window !== "undefined") {
-    localStorage.setItem("pricingPlans", JSON.stringify(plans))
-  }
-
-  pricingPlansData = plans
-  return true
-}
-
-export const updateSubscriptionPlan = (planId: string, updates: Partial<PricingPlan>): boolean => {
-  const plans = getSubscriptionPlans()
-  const index = plans.findIndex((p) => p.id === planId)
-
-  if (index === -1) return false
-
-  plans[index] = { ...plans[index], ...updates }
-
-  if (typeof window !== "undefined") {
-    localStorage.setItem("subscriptionPlans", JSON.stringify(plans))
-  }
-
-  subscriptionPlansData = plans
-  return true
-}
-
-export const addPricingPlan = (plan: PricingPlan): boolean => {
-  const plans = getPricingPlans()
-
-  if (plans.find((p) => p.id === plan.id)) return false
-
-  plans.push(plan)
-
-  if (typeof window !== "undefined") {
-    localStorage.setItem("pricingPlans", JSON.stringify(plans))
-  }
-
-  pricingPlansData = plans
-  return true
-}
-
-export const deletePricingPlan = (planId: string): boolean => {
-  const plans = getPricingPlans()
-  const filtered = plans.filter((p) => p.id !== planId)
-
-  if (filtered.length === plans.length) return false
-
-  if (typeof window !== "undefined") {
-    localStorage.setItem("pricingPlans", JSON.stringify(filtered))
-  }
-
-  pricingPlansData = filtered
-  return true
-}
-
-export const pricingPlans = pricingPlansData
-export const subscriptionPlans = subscriptionPlansData
-
 const piPaymentService = {
+  /**
+   * Create a real Pi payment using the official SDK flow:
+   * 1. Initialize Pi SDK (sandbox=false for Testnet)
+   * 2. Authenticate user with Pi
+   * 3. Create payment via Pi.createPayment()
+   * 4. Server approves payment via Platform API
+   * 5. Server completes payment via Platform API
+   * 6. Deliver service only after successful completion
+   */
   async createPayment(
     amount: number,
     memo: string,
@@ -212,66 +116,26 @@ const piPaymentService = {
     },
   ): Promise<PiPaymentResponse> {
     try {
-      // Step 1: Create payment intent on backend
-      console.log("[Pi Payment] Creating payment intent...", { amount, memo })
-      
-      const createResponse = await fetch('/api/pi-payment/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, memo, metadata, userId: metadata.userId })
-      })
+      // Step 1: Initialize Pi SDK with Testnet settings
+      // sandbox=false for Testnet (NOT sandbox environment)
+      await piSDK.initialize(false)
 
-      if (!createResponse.ok) {
-        throw new Error("Failed to create payment intent")
-      }
-
-      const { paymentId } = await createResponse.json()
-      console.log("[Pi Payment] Payment intent created:", paymentId)
-
-      // Step 2: Initialize Pi SDK
-      await piSDK.initialize(!process.env.NEXT_PUBLIC_PI_MAINNET)
-
+      // Step 2: Authenticate with Pi Network
       if (!piSDK.isAuthenticated()) {
         await piSDK.authenticate()
       }
 
-      // Step 3: Create payment with Pi SDK
+      // Step 3: Create payment via Pi SDK
+      // The SDK will call onReadyForServerApproval and onReadyForServerCompletion
+      // which will forward to our backend for real Platform API calls
       const paymentData: PiPaymentData = {
         amount,
         memo,
-        metadata: { ...metadata, paymentId },
+        metadata,
       }
 
       console.log("[Pi Payment] Initiating Pi payment flow...")
       const result = await piSDK.createPayment(paymentData)
-
-      // Step 4: Approve payment on backend
-      if (result.status === "completed" && result.paymentId) {
-        console.log("[Pi Payment] Payment completed, approving on backend...")
-        
-        await fetch('/api/pi-payment/approve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentId: result.paymentId, txid: result.txid })
-        })
-
-        // Step 5: Complete payment
-        await fetch('/api/pi-payment/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentId: result.paymentId, txid: result.txid })
-        })
-
-        console.log("[Pi Payment] Payment fully completed!")
-      } else if (result.status === "cancelled") {
-        console.log("[Pi Payment] Payment cancelled by user")
-        
-        await fetch('/api/pi-payment/cancel', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentId: result.paymentId })
-        })
-      }
 
       const payment: PiPaymentResponse = {
         identifier: result.paymentId,
@@ -280,13 +144,6 @@ const piPaymentService = {
         timestamp: new Date(),
         transactionId: result.txid,
         metadata,
-      }
-
-      // Save to payment history
-      if (typeof window !== "undefined") {
-        const history = this.getPaymentHistory(metadata.userId)
-        history.push(payment)
-        localStorage.setItem(`payment_history_${metadata.userId}`, JSON.stringify(history))
       }
 
       return payment
@@ -304,20 +161,6 @@ const piPaymentService = {
     } catch (error) {
       console.error("Payment verification error:", error)
       return { status: "failed", verified: false }
-    }
-  },
-
-  getPaymentHistory(userId: string): PiPaymentResponse[] {
-    if (typeof window === "undefined") return []
-    const stored = localStorage.getItem(`payment_history_${userId}`)
-    if (!stored) return []
-    try {
-      return JSON.parse(stored).map((p: any) => ({
-        ...p,
-        timestamp: new Date(p.timestamp),
-      }))
-    } catch {
-      return []
     }
   },
 

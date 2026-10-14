@@ -1,6 +1,9 @@
 /**
  * Pi Payment Verification Utilities
- * للتحقق من المدفوعات مع Pi Network API
+ * For verifying payments with Pi Network Platform API
+ * 
+ * IMPORTANT: These functions must ONLY be called from the backend (server-side)
+ * Never expose PI_API_KEY in client-side code
  */
 
 export interface PiPaymentVerificationResult {
@@ -14,8 +17,8 @@ export interface PiPaymentVerificationResult {
 }
 
 /**
- * التحقق من الدفع مع Pi Network API
- * هذه الدالة يجب استدعاؤها من Backend فقط
+ * Verify payment status with Pi Network Platform API
+ * Uses Server API Key authorization
  */
 export async function verifyPaymentWithPiAPI(
   paymentId: string,
@@ -23,6 +26,7 @@ export async function verifyPaymentWithPiAPI(
 ): Promise<PiPaymentVerificationResult> {
   try {
     const key = apiKey || process.env.PI_API_KEY
+    const apiUrl = process.env.PI_API_URL || "https://api.minepi.com"
 
     if (!key) {
       return {
@@ -32,9 +36,9 @@ export async function verifyPaymentWithPiAPI(
       }
     }
 
-    // استدعاء Pi Network API للتحقق
+    // Call Pi Platform API to verify payment
     const response = await fetch(
-      `https://api.minepi.com/v2/payments/${paymentId}`,
+      `${apiUrl}/v2/payments/${paymentId}`,
       {
         method: "GET",
         headers: {
@@ -54,13 +58,9 @@ export async function verifyPaymentWithPiAPI(
 
     const data = await response.json()
 
-    // فحص حالة الدفع
-    const isCompleted = 
-      data.status?.developer_completed === true ||
-      (data.status?.transaction_verified === true && 
-       data.status?.developer_approved === true)
-    
-    const isCancelled = data.status?.cancelled === true
+    // Check payment status
+    const isCompleted = data.status?.developer_completed === true
+    const isCancelled = data.status?.cancelled === true || data.status?.user_cancelled === true
 
     return {
       verified: isCompleted,
@@ -81,7 +81,7 @@ export async function verifyPaymentWithPiAPI(
 }
 
 /**
- * الموافقة على الدفع (يجب استدعاؤها من Backend فقط بعد التحقق)
+ * Approve payment via Pi Platform API (server-side only)
  */
 export async function approvePaymentWithPiAPI(
   paymentId: string,
@@ -89,16 +89,14 @@ export async function approvePaymentWithPiAPI(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const key = apiKey || process.env.PI_API_KEY
+    const apiUrl = process.env.PI_API_URL || "https://api.minepi.com"
 
     if (!key) {
-      return {
-        success: false,
-        error: "API key not configured",
-      }
+      return { success: false, error: "API key not configured" }
     }
 
     const response = await fetch(
-      `https://api.minepi.com/v2/payments/${paymentId}/approve`,
+      `${apiUrl}/v2/payments/${paymentId}/approve`,
       {
         method: "POST",
         headers: {
@@ -109,24 +107,18 @@ export async function approvePaymentWithPiAPI(
     )
 
     if (!response.ok) {
-      return {
-        success: false,
-        error: `Approval failed: ${response.status}`,
-      }
+      return { success: false, error: `Approval failed: ${response.status}` }
     }
 
     return { success: true }
   } catch (error) {
     console.error("[Pi Payment Approval] Error:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }
 
 /**
- * إتمام الدفع (آخر خطوة بعد الموافقة)
+ * Complete payment via Pi Platform API (server-side only)
  */
 export async function completePaymentWithPiAPI(
   paymentId: string,
@@ -135,16 +127,14 @@ export async function completePaymentWithPiAPI(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const key = apiKey || process.env.PI_API_KEY
+    const apiUrl = process.env.PI_API_URL || "https://api.minepi.com"
 
     if (!key) {
-      return {
-        success: false,
-        error: "API key not configured",
-      }
+      return { success: false, error: "API key not configured" }
     }
 
     const response = await fetch(
-      `https://api.minepi.com/v2/payments/${paymentId}/complete`,
+      `${apiUrl}/v2/payments/${paymentId}/complete`,
       {
         method: "POST",
         headers: {
@@ -156,24 +146,18 @@ export async function completePaymentWithPiAPI(
     )
 
     if (!response.ok) {
-      return {
-        success: false,
-        error: `Completion failed: ${response.status}`,
-      }
+      return { success: false, error: `Completion failed: ${response.status}` }
     }
 
     return { success: true }
   } catch (error) {
     console.error("[Pi Payment Completion] Error:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }
 
 /**
- * إلغاء الدفع
+ * Cancel payment via Pi Platform API (server-side only)
  */
 export async function cancelPaymentWithPiAPI(
   paymentId: string,
@@ -181,16 +165,14 @@ export async function cancelPaymentWithPiAPI(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const key = apiKey || process.env.PI_API_KEY
+    const apiUrl = process.env.PI_API_URL || "https://api.minepi.com"
 
     if (!key) {
-      return {
-        success: false,
-        error: "API key not configured",
-      }
+      return { success: false, error: "API key not configured" }
     }
 
     const response = await fetch(
-      `https://api.minepi.com/v2/payments/${paymentId}/cancel`,
+      `${apiUrl}/v2/payments/${paymentId}/cancel`,
       {
         method: "POST",
         headers: {
@@ -201,18 +183,12 @@ export async function cancelPaymentWithPiAPI(
     )
 
     if (!response.ok) {
-      return {
-        success: false,
-        error: `Cancellation failed: ${response.status}`,
-      }
+      return { success: false, error: `Cancellation failed: ${response.status}` }
     }
 
     return { success: true }
   } catch (error) {
     console.error("[Pi Payment Cancellation] Error:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    }
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }

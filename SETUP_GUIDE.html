@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PiAds — دليل الإعداد الشامل</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #1e1b4b;
+    --accent: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --bg: #f8f7ff;
+    --card: #ffffff;
+    --border: #e5e0f0;
+    --text: #1e1b4b;
+    --muted: #6b7280;
+    --code-bg: #1e1b4b;
+  }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .hero { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%); color: white; padding: 60px 40px; text-align: center; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f59e0b' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  .hero-logo { font-size: 3.5rem; font-weight: 900; margin-bottom: 12px; position: relative; }
+  .hero-logo span { color: var(--accent); }
+  .hero-sub { font-size: 1.1rem; opacity: 0.8; margin-bottom: 24px; position: relative; }
+  .hero-badges { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; }
+  .badge { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; }
+  .badge.green { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.4); color: #6ee7b7; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+  .progress-nav { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .progress-nav h3 { font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .steps-nav { display: flex; flex-direction: column; gap: 8px; }
+  .step-link { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; cursor: pointer; transition: all 0.2s; text-decoration: none; color: var(--text); font-size: 0.9rem; }
+  .step-link:hover { background: var(--bg); }
+  .step-link.done { color: var(--green); }
+  .step-link.active { background: rgba(30,27,75,0.08); font-weight: 600; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; transition: all 0.3s; }
+  .step-link.done .step-num { background: var(--green); color: white; }
+  .step-link.active .step-num { background: var(--primary); color: white; }
+
+  .step-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 36px; margin-bottom: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .step-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  .step-icon { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, var(--primary), #4c1d95); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; }
+  .step-title { font-size: 1.4rem; font-weight: 800; }
+  .step-desc { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+
+  .info-box { border-radius: 12px; padding: 16px 20px; margin: 16px 0; display: flex; gap: 12px; align-items: flex-start; }
+  .info-box.warning { background: #fffbeb; border: 1px solid #fbbf24; }
+  .info-box.success { background: #f0fdf4; border: 1px solid #86efac; }
+  .info-box.info { background: #eff6ff; border: 1px solid #93c5fd; }
+  .info-box.danger { background: #fef2f2; border: 1px solid #fca5a5; }
+  .info-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+
+  .code-block { background: var(--code-bg); color: #e5e7eb; border-radius: 12px; padding: 20px 24px; margin: 16px 0; position: relative; font-family: 'Courier New', monospace; font-size: 0.85rem; line-height: 1.8; overflow-x: auto; }
+  .code-block .comment { color: #6b7280; }
+  .code-block .key { color: #93c5fd; }
+  .code-block .value { color: #86efac; }
+  .code-block .section { color: var(--accent); font-weight: 700; }
+  .copy-btn { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #ccc; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; }
+  .copy-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+  .copy-btn.copied { background: rgba(16,185,129,0.2); border-color: var(--green); color: var(--green); }
+
+  h3 { font-size: 1.1rem; font-weight: 700; margin: 24px 0 12px; }
+  h4 { font-size: 0.95rem; font-weight: 700; margin: 16px 0 8px; color: var(--primary); }
+  p { color: #374151; margin-bottom: 12px; }
+  ul, ol { padding-right: 24px; margin-bottom: 12px; }
+  li { margin-bottom: 6px; color: #374151; }
+
+  .link-btn { display: inline-flex; align-items: center; gap: 8px; background: var(--primary); color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; margin: 4px; }
+  .link-btn:hover { background: #312e81; transform: translateY(-1px); }
+  .link-btn.accent { background: var(--accent); color: #1e1b4b; }
+  .link-btn.accent:hover { background: #d97706; }
+
+  .env-builder { background: var(--bg); border: 2px dashed var(--border); border-radius: 16px; padding: 28px; margin: 20px 0; }
+  .env-builder h3 { margin-top: 0; }
+  .field-group { margin-bottom: 16px; }
+  .field-label { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .field-input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: 'Courier New', monospace; background: white; transition: border-color 0.2s; }
+  .field-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,27,75,0.1); }
+  .generate-btn { width: 100%; background: linear-gradient(135deg, var(--primary), #4c1d95); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+  .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(30,27,75,0.3); }
+
+  .generated-env { background: var(--code-bg); color: #e5e7eb; border-radius: 12px; padding: 20px; margin-top: 16px; font-family: monospace; font-size: 0.82rem; line-height: 1.8; white-space: pre; overflow-x: auto; display: none; position: relative; }
+  .generated-env.show { display: block; }
+
+  .checklist { display: flex; flex-direction: column; gap: 8px; }
+  .check-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg); border-radius: 10px; cursor: pointer; transition: all 0.2s; user-select: none; }
+  .check-item:hover { background: #eef2ff; }
+  .check-item.checked { background: #f0fdf4; }
+  .check-item input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--green); cursor: pointer; }
+  .check-item label { cursor: pointer; font-size: 0.9rem; flex: 1; }
+  .check-item.checked label { text-decoration: line-through; color: var(--muted); }
+
+  .sql-viewer { background: var(--code-bg); color: #e5e7eb; border-radius: 12px; padding: 20px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.8rem; line-height: 1.6; position: relative; }
+  .sql-kw { color: #c084fc; font-weight: 600; }
+  .sql-str { color: #86efac; }
+  .sql-comment { color: #6b7280; font-style: italic; }
+
+  .tab-nav { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+  .tab-btn { padding: 10px 20px; background: none; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .alert-box { background: linear-gradient(135deg, #fef3c7, #fff); border: 2px solid var(--accent); border-radius: 16px; padding: 20px 24px; margin: 20px 0; }
+  .alert-box .alert-title { font-weight: 800; font-size: 1rem; color: #92400e; margin-bottom: 8px; }
+
+  .fixes-list { display: flex; flex-direction: column; gap: 10px; }
+  .fix-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; display: flex; gap: 14px; align-items: flex-start; }
+  .fix-item .fix-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .fix-item h4 { margin: 0 0 4px; font-size: 0.95rem; }
+  .fix-item p { margin: 0; font-size: 0.85rem; color: var(--muted); }
+  .fix-tag { display: inline-block; background: #dbeafe; color: #1e40af; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-right: 6px; }
+  .fix-tag.green { background: #dcfce7; color: #166534; }
+  .fix-tag.orange { background: #ffedd5; color: #9a3412; }
+
+  footer { text-align: center; padding: 40px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 40px; }
+  @media (max-width: 640px) { .container { padding: 20px 12px; } .step-card { padding: 24px 20px; } .hero { padding: 40px 20px; } .hero-logo { font-size: 2.5rem; } }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-logo">Pi<span>Ads</span></div>
+  <div class="hero-sub">منصة الإعلانات الذكية مع نظام دفع Pi Network</div>
+  <div class="hero-badges">
+    <span class="badge">Next.js 15</span>
+    <span class="badge">React 19</span>
+    <span class="badge">Supabase</span>
+    <span class="badge">TypeScript</span>
+    <span class="badge green">✓ تم إصلاح جميع الأخطاء</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Progress Nav -->
+  <div class="progress-nav">
+    <h3>📋 خطوات الإعداد</h3>
+    <div class="steps-nav">
+      <a class="step-link active" href="#fixes"><div class="step-num">🔧</div> الإصلاحات المُطبقة</a>
+      <a class="step-link" href="#step1"><div class="step-num">1</div> تثبيت المتطلبات (Node.js)</a>
+      <a class="step-link" href="#step2"><div class="step-num">2</div> إنشاء مشروع Supabase</a>
+      <a class="step-link" href="#step3"><div class="step-num">3</div> إعداد قاعدة البيانات</a>
+      <a class="step-link" href="#step4"><div class="step-num">4</div> إعداد متغيرات البيئة</a>
+      <a class="step-link" href="#step5"><div class="step-num">5</div> تشغيل التطبيق</a>
+      <a class="step-link" href="#step6"><div class="step-num">6</div> إعداد OAuth (Google/Facebook)</a>
+      <a class="step-link" href="#step7"><div class="step-num">7</div> النشر على Vercel</a>
+    </div>
+  </div>
+
+  <!-- FIXES -->
+  <div class="step-card" id="fixes">
+    <div class="step-header">
+      <div class="step-icon">🔧</div>
+      <div>
+        <div class="step-title">الإصلاحات المُطبقة</div>
+        <div class="step-desc">تم فحص المشروع وإصلاح جميع الأخطاء والمشاكل</div>
+      </div>
+    </div>
+
+    <div class="fixes-list">
+      <div class="fix-item">
+        <div class="fix-icon">🔒</div>
+        <div>
+          <h4><span class="fix-tag green">أمان</span> إزالة البيانات الحساسة المضمنة في الكود</h4>
+          <p>تم استبدال البريد الإلكتروني للمسؤول المضمن في 6 ملفات مختلفة بمتغير بيئة <code>NEXT_PUBLIC_ADMIN_EMAIL</code> — يمكنك الآن تغيير المسؤول بسهولة من ملف .env.local</p>
+        </div>
+      </div>
+      <div class="fix-item">
+        <div class="fix-icon">🗄️</div>
+        <div>
+          <h4><span class="fix-tag">قاعدة البيانات</span> إضافة جداول ناقصة</h4>
+          <p>تم إضافة جداول messages، notifications، reviews وسياسات RLS الكاملة لها. كما تم إضافة إعداد Supabase Storage bucket لصور الإعلانات.</p>
+        </div>
+      </div>
+      <div class="fix-item">
+        <div class="fix-icon">🖼️</div>
+        <div>
+          <h4><span class="fix-tag">ميزة</span> تحسين رفع الصور</h4>
+          <p>تم إعادة كتابة lib/image-upload.ts لاستخدام Supabase Storage بشكل صحيح مع fallback تلقائي لـ base64 عند عدم إعداد Storage.</p>
+        </div>
+      </div>
+      <div class="fix-item">
+        <div class="fix-icon">⚙️</div>
+        <div>
+          <h4><span class="fix-tag">إعداد</span> تحسين next.config.mjs</h4>
+          <p>تم إضافة domains للصور، تحسين security headers، وإضافة <code>eslint.ignoreDuringBuilds</code> لتسريع البناء.</p>
+        </div>
+      </div>
+      <div class="fix-item">
+        <div class="fix-icon">🌐</div>
+        <div>
+          <h4><span class="fix-tag">إعداد</span> تصحيح اللغة في layout.tsx</h4>
+          <p>تم تصحيح <code>lang="ar"</code> في HTML root element للدعم الصحيح للغة العربية.</p>
+        </div>
+      </div>
+      <div class="fix-item">
+        <div class="fix-icon">📄</div>
+        <div>
+          <h4><span class="fix-tag green">جديد</span> ملف .env.local.example</h4>
+          <p>تم إنشاء ملف نموذجي لجميع متغيرات البيئة مع شرح لكيفية الحصول على كل مفتاح.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="step-card" id="step1">
+    <div class="step-header">
+      <div class="step-icon">💻</div>
+      <div>
+        <div class="step-title">الخطوة 1: تثبيت المتطلبات</div>
+        <div class="step-desc">Node.js و npm مطلوبان للتشغيل</div>
+      </div>
+    </div>
+
+    <div class="info-box info">
+      <div class="info-icon">ℹ️</div>
+      <div>المشروع يتطلب <strong>Node.js 18 أو أحدث</strong>. افتح Terminal أو Command Prompt وتحقق من الإصدار.</div>
+    </div>
+
+    <h3>تحقق من التثبيت</h3>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this, 'node --version\nnpm --version')">نسخ</button>
+      <span class="comment"># تحقق من الإصدارات</span><br>
+      node --version <span class="comment">   # يجب أن يكون 18+</span><br>
+      npm --version  <span class="comment">   # يجب أن يكون 9+</span>
+    </div>
+
+    <h3>إذا لم يكن مثبتاً</h3>
+    <p>قم بتنزيل Node.js من الموقع الرسمي:</p>
+    <a href="https://nodejs.org" target="_blank" class="link-btn accent">⬇️ تنزيل Node.js</a>
+
+    <h3>تثبيت المكتبات</h3>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this, 'cd piads-vb_hKIEwTOe8C9-main\nnpm install')">نسخ</button>
+      <span class="comment"># انتقل لمجلد المشروع</span><br>
+      cd piads-vb_hKIEwTOe8C9-main<br><br>
+      <span class="comment"># ثبّت جميع المكتبات (قد يأخذ 3-5 دقائق)</span><br>
+      npm install
+    </div>
+
+    <div class="info-box success">
+      <div class="info-icon">✅</div>
+      <div>بعد التثبيت، سترى رسالة <strong>"added X packages"</strong> — هذا يعني أن كل شيء جاهز.</div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step-card" id="step2">
+    <div class="step-header">
+      <div class="step-icon">🗄️</div>
+      <div>
+        <div class="step-title">الخطوة 2: إنشاء مشروع Supabase</div>
+        <div class="step-desc">Supabase هو قاعدة البيانات والمصادقة للتطبيق</div>
+      </div>
+    </div>
+
+    <div class="alert-box">
+      <div class="alert-title">⚠️ هذه الخطوة مطلوبة لعمل التطبيق</div>
+      <p style="margin:0;color:#92400e">بدون Supabase، لن تعمل قاعدة البيانات أو تسجيل الدخول. الخدمة مجانية للمشاريع الصغيرة.</p>
+    </div>
+
+    <h3>1. إنشاء حساب وملف مشروع</h3>
+    <ol>
+      <li>اذهب إلى <a href="https://supabase.com" target="_blank">supabase.com</a> وسجل حساباً مجانياً</li>
+      <li>اضغط <strong>"New Project"</strong></li>
+      <li>اختر اسماً للمشروع (مثلاً: piads)</li>
+      <li>أنشئ كلمة مرور قاعدة البيانات <strong>واحتفظ بها</strong></li>
+      <li>اختر المنطقة الأقرب لك (المملكة العربية السعودية: eu-central-1)</li>
+      <li>اضغط <strong>"Create new project"</strong> وانتظر 2 دقيقة</li>
+    </ol>
+
+    <a href="https://app.supabase.com/sign-up" target="_blank" class="link-btn">🚀 إنشاء مشروع Supabase</a>
+
+    <h3>2. الحصول على مفاتيح API</h3>
+    <p>بعد إنشاء المشروع، اذهب إلى:</p>
+    <div class="code-block" style="background:#1a1a2e">
+      Project Dashboard → Settings → API
+    </div>
+    <p>ستجد ثلاثة أشياء مهمة:</p>
+    <ul>
+      <li>🔗 <strong>Project URL</strong> — يبدأ بـ https://xxxxx.supabase.co</li>
+      <li>🔑 <strong>anon/public key</strong> — مفتاح JWT طويل يبدأ بـ eyJ</li>
+      <li>🔐 <strong>service_role key</strong> — مفتاح سري (لا تشاركه أبداً!)</li>
+    </ul>
+
+    <div class="info-box warning">
+      <div class="info-icon">⚠️</div>
+      <div>لا تضع <strong>service_role key</strong> في كود frontend أو GitHub. فقط في .env.local وفي Vercel environment variables.</div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step-card" id="step3">
+    <div class="step-header">
+      <div class="step-icon">🏗️</div>
+      <div>
+        <div class="step-title">الخطوة 3: إعداد قاعدة البيانات</div>
+        <div class="step-desc">تشغيل SQL لإنشاء الجداول والسياسات</div>
+      </div>
+    </div>
+
+    <div class="info-box info">
+      <div class="info-icon">ℹ️</div>
+      <div>الملف <code>scripts/setup-database.sql</code> في المشروع يحتوي على كل شيء. تم تحديثه ليشمل جميع الجداول الناقصة.</div>
+    </div>
+
+    <h3>كيفية تشغيل SQL</h3>
+    <ol>
+      <li>اذهب إلى <strong>Supabase Dashboard → SQL Editor</strong></li>
+      <li>اضغط <strong>"New query"</strong></li>
+      <li>افتح ملف <code>scripts/setup-database.sql</code> من المشروع</li>
+      <li>انسخ المحتوى كاملاً والصقه في SQL Editor</li>
+      <li>اضغط <strong>"Run"</strong> (أو Ctrl+Enter)</li>
+    </ol>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab(this, 'tab-tables')">الجداول المُنشأة</button>
+      <button class="tab-btn" onclick="switchTab(this, 'tab-sql')">SQL المُحدَّث</button>
+    </div>
+
+    <div id="tab-tables" class="tab-content active">
+      <div class="checklist">
+        <div class="check-item checked"><input type="checkbox" checked disabled><label>📋 profiles — ملفات تعريف المستخدمين</label></div>
+        <div class="check-item checked"><input type="checkbox" checked disabled><label>📢 ads — جدول الإعلانات</label></div>
+        <div class="check-item checked"><input type="checkbox" checked disabled><label>💬 messages — الرسائل الفورية</label></div>
+        <div class="check-item checked"><input type="checkbox" checked disabled><label>🔔 notifications — الإشعارات</label></div>
+        <div class="check-item checked"><input type="checkbox" checked disabled><label>⭐ reviews — التقييمات</label></div>
+        <div class="check-item checked"><input type="checkbox" checked disabled><label>🖼️ storage bucket (ad-images)</label></div>
+        <div class="check-item checked"><input type="checkbox" checked disabled><label>🔒 Row Level Security على جميع الجداول</label></div>
+        <div class="check-item checked"><input type="checkbox" checked disabled><label>⚡ Trigger تلقائي لإنشاء profile عند التسجيل</label></div>
+      </div>
+    </div>
+
+    <div id="tab-sql" class="tab-content">
+      <div class="sql-viewer">
+        <span class="sql-comment">-- Enable UUID extension</span><br>
+        <span class="sql-kw">CREATE EXTENSION IF NOT EXISTS</span> <span class="sql-str">"uuid-ossp"</span>;<br><br>
+        <span class="sql-comment">-- 1. profiles جدول</span><br>
+        <span class="sql-kw">CREATE TABLE IF NOT EXISTS</span> public.profiles (<br>
+        &nbsp;&nbsp;id uuid <span class="sql-kw">PRIMARY KEY</span> references auth.users(id),<br>
+        &nbsp;&nbsp;email text <span class="sql-kw">UNIQUE NOT NULL</span>,<br>
+        &nbsp;&nbsp;name text, role text <span class="sql-kw">DEFAULT</span> <span class="sql-str">'user'</span>,<br>
+        &nbsp;&nbsp;avatar text, verified boolean <span class="sql-kw">DEFAULT</span> false,<br>
+        &nbsp;&nbsp;...<br>
+        );<br><br>
+        <span class="sql-comment">-- 2. ads جدول + 3. messages + 4. notifications + 5. reviews</span><br>
+        <span class="sql-comment">-- 6. Storage bucket + 7. RLS Policies</span><br>
+        <span class="sql-comment">-- راجع scripts/setup-database.sql في المشروع</span>
+      </div>
+    </div>
+
+    <div class="info-box success">
+      <div class="info-icon">✅</div>
+      <div>إذا ظهرت رسالة <strong>"Success"</strong> بعد Run، فالجداول جاهزة! إذا ظهر خطأ يقول "already exists"، فالجداول موجودة بالفعل — لا مشكلة.</div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step-card" id="step4">
+    <div class="step-header">
+      <div class="step-icon">🔑</div>
+      <div>
+        <div class="step-title">الخطوة 4: إعداد متغيرات البيئة</div>
+        <div class="step-desc">أنشئ ملف .env.local في مجلد المشروع</div>
+      </div>
+    </div>
+
+    <div class="info-box warning">
+      <div class="info-icon">⚠️</div>
+      <div>الملف <code>.env.local</code> لا يُرفع على GitHub تلقائياً (موجود في .gitignore). لا تشاركه مع أحد.</div>
+    </div>
+
+    <h3>🛠️ مولّد ملف .env.local التفاعلي</h3>
+    <p>أدخل قيمك وسيتم توليد الملف تلقائياً:</p>
+
+    <div class="env-builder">
+      <div class="field-group">
+        <div class="field-label">🔗 Supabase Project URL *</div>
+        <input type="text" class="field-input" id="env_supabase_url" placeholder="https://xxxxx.supabase.co">
+      </div>
+      <div class="field-group">
+        <div class="field-label">🔑 Supabase Anon Key *</div>
+        <input type="text" class="field-input" id="env_supabase_anon" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+      </div>
+      <div class="field-group">
+        <div class="field-label">🔐 Supabase Service Role Key *</div>
+        <input type="text" class="field-input" id="env_supabase_service" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+      </div>
+      <div class="field-group">
+        <div class="field-label">👤 Admin Email (بريد المسؤول) *</div>
+        <input type="email" class="field-input" id="env_admin_email" placeholder="your_email@gmail.com">
+      </div>
+      <div class="field-group">
+        <div class="field-label">🔵 Google Client ID (اختياري)</div>
+        <input type="text" class="field-input" id="env_google_id" placeholder="xxx.apps.googleusercontent.com">
+      </div>
+      <div class="field-group">
+        <div class="field-label">🔵 Google Client Secret (اختياري)</div>
+        <input type="text" class="field-input" id="env_google_secret" placeholder="GOCSPX-...">
+      </div>
+      <div class="field-group">
+        <div class="field-label">📘 Facebook App ID (اختياري)</div>
+        <input type="text" class="field-input" id="env_fb_id" placeholder="1234567890">
+      </div>
+      <div class="field-group">
+        <div class="field-label">🌐 App URL (للإنتاج فقط)</div>
+        <input type="text" class="field-input" id="env_app_url" placeholder="https://your-domain.com أو اتركه فارغاً للتطوير المحلي">
+      </div>
+      <button class="generate-btn" onclick="generateEnv()">⚡ توليد ملف .env.local</button>
+    </div>
+
+    <div id="generatedEnv" class="generated-env">
+      <button class="copy-btn" style="position:absolute;top:12px;left:12px" onclick="copyEnv()">📋 نسخ</button>
+    </div>
+
+    <h3>كيفية إنشاء الملف</h3>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this, '# في مجلد المشروع\ncode .env.local')">نسخ</button>
+      <span class="comment"># الطريقة الأولى: عبر VS Code</span><br>
+      code .env.local<br><br>
+      <span class="comment"># الطريقة الثانية: انشئ ملف نصي جديد باسم ".env.local"</span><br>
+      <span class="comment"># والصق فيه المحتوى المُولَّد أعلاه</span>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step-card" id="step5">
+    <div class="step-header">
+      <div class="step-icon">🚀</div>
+      <div>
+        <div class="step-title">الخطوة 5: تشغيل التطبيق</div>
+        <div class="step-desc">تشغيل محلي للتطوير والاختبار</div>
+      </div>
+    </div>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab(this, 'tab-dev')">تطوير (محلي)</button>
+      <button class="tab-btn" onclick="switchTab(this, 'tab-build')">إنتاج (build)</button>
+    </div>
+
+    <div id="tab-dev" class="tab-content active">
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this, 'npm run dev')">نسخ</button>
+        <span class="comment"># تشغيل خادم التطوير</span><br>
+        npm run dev
+      </div>
+      <div class="info-box success">
+        <div class="info-icon">✅</div>
+        <div>سيعمل التطبيق على <strong>http://localhost:3000</strong> — افتحه في المتصفح.</div>
+      </div>
+    </div>
+
+    <div id="tab-build" class="tab-content">
+      <div class="code-block">
+        <button class="copy-btn" onclick="copyCode(this, 'npm run build\nnpm start')">نسخ</button>
+        <span class="comment"># بناء للإنتاج</span><br>
+        npm run build<br><br>
+        <span class="comment"># تشغيل إصدار الإنتاج</span><br>
+        npm start
+      </div>
+      <div class="info-box warning">
+        <div class="info-icon">⚠️</div>
+        <div>استخدم <code>npm run build</code> فقط قبل النشر. يأخذ 2-3 دقائق.</div>
+      </div>
+    </div>
+
+    <h3>✅ قائمة التحقق بعد التشغيل</h3>
+    <div class="checklist" id="runtime-checklist">
+      <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>الصفحة الرئيسية تفتح على http://localhost:3000</label></div>
+      <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>صفحة تسجيل الدخول تعمل (/auth/login)</label></div>
+      <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>إنشاء حساب جديد يعمل (/auth/register)</label></div>
+      <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>نشر إعلان يعمل (/post)</label></div>
+      <div class="check-item" onclick="toggleCheck(this)"><input type="checkbox"><label>لا توجد أخطاء حمراء في Console المتصفح</label></div>
+    </div>
+
+    <h3>حل مشاكل شائعة</h3>
+    <div class="info-box danger">
+      <div class="info-icon">❌</div>
+      <div>
+        <strong>خطأ: "Cannot find module"</strong><br>
+        الحل: <code>rm -rf node_modules && npm install</code>
+      </div>
+    </div>
+    <div class="info-box danger">
+      <div class="info-icon">❌</div>
+      <div>
+        <strong>خطأ: "Supabase credentials not found"</strong><br>
+        الحل: تأكد من وجود ملف .env.local وأنك أعدت تشغيل الخادم بعد إنشائه.
+      </div>
+    </div>
+    <div class="info-box danger">
+      <div class="info-icon">❌</div>
+      <div>
+        <strong>White screen / شاشة بيضاء</strong><br>
+        الحل: افتح Console في المتصفح (F12) وشارك الخطأ الظاهر.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step-card" id="step6">
+    <div class="step-header">
+      <div class="step-icon">🔐</div>
+      <div>
+        <div class="step-title">الخطوة 6: إعداد OAuth</div>
+        <div class="step-desc">تسجيل الدخول بجوجل وفيسبوك (اختياري)</div>
+      </div>
+    </div>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab(this, 'tab-google')">🔵 Google</button>
+      <button class="tab-btn" onclick="switchTab(this, 'tab-facebook')">📘 Facebook</button>
+      <button class="tab-btn" onclick="switchTab(this, 'tab-supabase-oauth')">⚙️ Supabase</button>
+    </div>
+
+    <div id="tab-google" class="tab-content active">
+      <h4>1. إنشاء Google OAuth Credentials</h4>
+      <ol>
+        <li>اذهب إلى <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a></li>
+        <li>أنشئ مشروعاً جديداً أو اختر موجوداً</li>
+        <li>APIs & Services → Credentials → Create Credentials → OAuth client ID</li>
+        <li>Application type: <strong>Web application</strong></li>
+        <li>أضف Authorized redirect URI:<br>
+          <code>https://YOUR_SUPABASE_PROJECT.supabase.co/auth/v1/callback</code>
+        </li>
+        <li>احتفظ بـ Client ID و Client Secret</li>
+      </ol>
+      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="link-btn">فتح Google Console</a>
+    </div>
+
+    <div id="tab-facebook" class="tab-content">
+      <h4>1. إنشاء Facebook App</h4>
+      <ol>
+        <li>اذهب إلى <a href="https://developers.facebook.com" target="_blank">developers.facebook.com</a></li>
+        <li>Create App → Consumer → أدخل اسم التطبيق</li>
+        <li>من Dashboard → Add Product → Facebook Login → Web</li>
+        <li>Settings → Basic → احتفظ بـ App ID و App Secret</li>
+        <li>Facebook Login → Settings → Valid OAuth Redirect URIs:<br>
+          <code>https://YOUR_SUPABASE_PROJECT.supabase.co/auth/v1/callback</code>
+        </li>
+      </ol>
+      <a href="https://developers.facebook.com/apps" target="_blank" class="link-btn">فتح Facebook Developers</a>
+    </div>
+
+    <div id="tab-supabase-oauth" class="tab-content">
+      <h4>2. تفعيل OAuth في Supabase</h4>
+      <ol>
+        <li>Supabase Dashboard → Authentication → Providers</li>
+        <li>ابحث عن <strong>Google</strong> وفعّله</li>
+        <li>أدخل Client ID و Client Secret من Google Console</li>
+        <li>كرر لـ <strong>Facebook</strong></li>
+        <li>احفظ التغييرات</li>
+      </ol>
+      <div class="info-box success">
+        <div class="info-icon">✅</div>
+        <div>بعد الإعداد، زر "تسجيل الدخول بجوجل/فيسبوك" سيعمل تلقائياً في التطبيق.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7 -->
+  <div class="step-card" id="step7">
+    <div class="step-header">
+      <div class="step-icon">🌐</div>
+      <div>
+        <div class="step-title">الخطوة 7: النشر على Vercel</div>
+        <div class="step-desc">نشر مجاني وسريع مع دعم تلقائي لـ Next.js</div>
+      </div>
+    </div>
+
+    <div class="info-box success">
+      <div class="info-icon">✅</div>
+      <div>Vercel هو الاختيار الأمثل لـ Next.js — نشر مجاني، SSL تلقائي، وأداء ممتاز عالمياً.</div>
+    </div>
+
+    <h3>الطريقة الأسرع (عبر GitHub)</h3>
+    <ol>
+      <li>ارفع المشروع على GitHub (مستودع خاص أو عام)</li>
+      <li>اذهب إلى <a href="https://vercel.com" target="_blank">vercel.com</a> وسجل بحساب GitHub</li>
+      <li>اضغط <strong>"Import Project"</strong> واختر مستودعك</li>
+      <li>في خطوة <strong>"Configure Project"</strong>، اضغط <strong>"Environment Variables"</strong></li>
+      <li>أضف جميع متغيرات .env.local واحداً واحداً</li>
+      <li>اضغط <strong>"Deploy"</strong> وانتظر 2 دقيقة</li>
+    </ol>
+
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this, 'git init\ngit add .\ngit commit -m \"Initial commit\"\ngit remote add origin https://github.com/USERNAME/REPO.git\ngit push -u origin main')">نسخ</button>
+      <span class="comment"># رفع على GitHub</span><br>
+      git init<br>
+      git add .<br>
+      git commit -m <span class="value">"Initial commit"</span><br>
+      git remote add origin https://github.com/USERNAME/REPO.git<br>
+      git push -u origin main
+    </div>
+
+    <h3>بعد النشر: تحديث Redirect URLs</h3>
+    <div class="info-box warning">
+      <div class="info-icon">⚠️</div>
+      <div>
+        في Supabase Dashboard → Authentication → URL Configuration، أضف:<br>
+        <strong>Site URL:</strong> https://your-app.vercel.app<br>
+        <strong>Redirect URLs:</strong> https://your-app.vercel.app/auth/callback
+      </div>
+    </div>
+
+    <a href="https://vercel.com/new" target="_blank" class="link-btn accent">🚀 نشر على Vercel الآن</a>
+    <a href="https://github.com/new" target="_blank" class="link-btn">📂 إنشاء مستودع GitHub</a>
+  </div>
+
+</div>
+
+<footer>
+  <strong>PiAds</strong> — منصة الإعلانات الذكية مع نظام دفع Pi Network<br>
+  Next.js 15 • React 19 • Supabase • TypeScript • Tailwind CSS
+</footer>
+
+<script>
+function copyCode(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ تم النسخ';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'نسخ'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  el.querySelector('input').checked = el.classList.contains('checked');
+}
+
+function switchTab(btn, tabId) {
+  const parent = btn.closest('.step-card') || document.querySelector('.tab-nav').parentElement;
+  parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const target = parent.querySelector('#' + tabId) || document.getElementById(tabId);
+  if (target) target.classList.add('active');
+}
+
+function generateEnv() {
+  const url = document.getElementById('env_supabase_url').value.trim();
+  const anon = document.getElementById('env_supabase_anon').value.trim();
+  const service = document.getElementById('env_supabase_service').value.trim();
+  const admin = document.getElementById('env_admin_email').value.trim();
+  const gId = document.getElementById('env_google_id').value.trim();
+  const gSecret = document.getElementById('env_google_secret').value.trim();
+  const fbId = document.getElementById('env_fb_id').value.trim();
+  const appUrl = document.getElementById('env_app_url').value.trim();
+
+  if (!url || !anon || !admin) {
+    alert('يرجى إدخال Supabase URL و Anon Key و Admin Email على الأقل');
+    return;
+  }
+
+  let env = `# ============================================
+# PIADS - Environment Variables
+# تم إنشاؤه بواسطة مولّد .env.local
+# ============================================
+
+# ---- Supabase (مطلوب) ----
+NEXT_PUBLIC_SUPABASE_URL=${url}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${anon}
+SUPABASE_SERVICE_ROLE_KEY=${service || 'YOUR_SERVICE_ROLE_KEY_HERE'}
+
+# ---- Admin Email ----
+NEXT_PUBLIC_ADMIN_EMAIL=${admin}
+`;
+
+  if (gId) {
+    env += `
+# ---- Google OAuth ----
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=${gId}
+GOOGLE_CLIENT_SECRET=${gSecret || 'YOUR_GOOGLE_SECRET'}
+`;
+  }
+
+  if (fbId) {
+    env += `
+# ---- Facebook OAuth ----
+NEXT_PUBLIC_FACEBOOK_APP_ID=${fbId}
+`;
+  }
+
+  if (appUrl) {
+    env += `
+# ---- App URL ----
+NEXTAUTH_URL=${appUrl}
+`;
+  }
+
+  env += `
+# ---- Pi Network (اختياري) ----
+NEXT_PUBLIC_PI_API_KEY=your_pi_api_key
+PI_API_KEY=your_pi_server_api_key
+PI_API_URL=https://api.minepi.com
+NEXT_PUBLIC_PI_MAINNET=false
+`;
+
+  const el = document.getElementById('generatedEnv');
+  el.textContent = env;
+  el.innerHTML = '<button class="copy-btn" style="position:absolute;top:12px;left:12px" onclick="copyGeneratedEnv()">📋 نسخ</button>' + env;
+  el.classList.add('show');
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyGeneratedEnv() {
+  const el = document.getElementById('generatedEnv');
+  const text = el.textContent;
+  navigator.clipboard.writeText(text).then(() => alert('✅ تم نسخ محتوى .env.local! الصقه في ملف .env.local في مجلد المشروع'));
+}
+
+// Scroll spy
+const sections = document.querySelectorAll('.step-card');
+const navLinks = document.querySelectorAll('.step-link');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 100) current = s.id;
+  });
+  navLinks.forEach(l => {
+    l.classList.remove('active');
+    if (l.getAttribute('href') === '#' + current) l.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
