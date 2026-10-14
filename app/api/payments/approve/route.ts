@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getSession } from "@lib/pi-session"
+import { getSession } from "@/lib/pi-session"
 
 export async function POST(request: Request) {
   try {
