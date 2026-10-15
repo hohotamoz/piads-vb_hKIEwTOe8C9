@@ -180,9 +180,8 @@ const piPaymentService = {
     },
   ): Promise<PiPaymentResponse> {
     try {
-      // Step 1: Initialize Pi SDK with Testnet settings
-      // sandbox=false for Testnet (NOT sandbox environment)
-      await piSDK.initialize(false)
+      // Follow the environment detected by the shared SDK configuration.
+      await piSDK.initialize()
 
       // Step 2: Authenticate with Pi Network
       if (!piSDK.isAuthenticated()) {
