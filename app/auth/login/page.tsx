@@ -1,29 +1,49 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AuthLayout } from "@/components/auth-layout"
 import { AlertCircle, Loader2 } from "lucide-react"
-import Link from "next/link"
+import { isPiSandboxMode } from "@/lib/system-config"
+
+declare global {
+  interface Window {
+    Pi?: {
+      init: (config: { version: string; sandbox?: boolean }) => void
+      authenticate: (
+        scopes: string[],
+        onIncompletePaymentFound?: (payment: any) => void,
+      ) => Promise<{
+        accessToken: string
+        user: {
+          uid: string
+          username: string
+        }
+      }>
+    }
+  }
+}
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const [isPiBrowser, setIsPiBrowser] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get("redirect") || "/"
 
   useEffect(() => {
-    // Check for Pi Browser environment
-    if (typeof window !== "undefined") {
-      const ua = navigator.userAgent
-      if (ua.includes("PiBrowser") || (window as any).Pi) {
-        setIsPiBrowser(true)
-      }
+    // Loading Pi SDK here ensures the same code path works in the Sandbox launcher.
+    if (typeof window === "undefined" || window.Pi) return
+
+    const script = document.createElement("script")
+    script.src = "https://sdk.minepi.com/pi-sdk.js"
+    script.async = true
+    script.onerror = () => setError("Failed to load Pi SDK")
+    document.head.appendChild(script)
+    return () => {
+      // Do not remove a shared SDK script; other app components may use it.
     }
   }, [])
 
@@ -32,9 +52,14 @@ export default function LoginPage() {
     setError("")
 
     try {
-      // Load Pi SDK if not already loaded
       if (typeof window.Pi === "undefined") {
         await new Promise<void>((resolve, reject) => {
+          const existing = document.querySelector<HTMLScriptElement>('script[src="https://sdk.minepi.com/pi-sdk.js"]')
+          if (existing) {
+            existing.addEventListener("load", () => resolve(), { once: true })
+            existing.addEventListener("error", () => reject(new Error("Failed to load Pi SDK")), { once: true })
+            return
+          }
           const script = document.createElement("script")
           script.src = "https://sdk.minepi.com/pi-sdk.js"
           script.onload = () => resolve()
@@ -43,18 +68,17 @@ export default function LoginPage() {
         })
       }
 
-      // Initialize Pi SDK for Testnet (sandbox=false)
-      window.Pi!.init({ version: "2.0", sandbox: false })
+      if (!window.Pi) throw new Error("Pi SDK not available")
 
-      // Authenticate with Pi Network
+      window.Pi.init({ version: "2.0", sandbox: isPiSandboxMode() })
+
       const scopes = ["username", "payments"]
       const onIncompletePaymentFound = (payment: any) => {
         console.log("[Pi Login] Incomplete payment found:", payment)
       }
 
-      const authResult = await window.Pi!.authenticate(scopes, onIncompletePaymentFound)
+      const authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound)
 
-      // Send access token to backend for verification
       const response = await fetch("/api/auth/pi-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -67,12 +91,12 @@ export default function LoginPage() {
         throw new Error(data.error || "Login failed")
       }
 
-      // Redirect to original page or home
       router.push(redirectUrl)
       router.refresh()
     } catch (err: any) {
       console.error("Pi Login Error:", err)
       setError(err?.message || "Could not authenticate with Pi Network")
+    } finally {
       setIsLoading(false)
     }
   }
@@ -80,12 +104,10 @@ export default function LoginPage() {
   return (
     <AuthLayout variant="dark">
       <div className="w-full max-w-sm animate-slide-up mx-auto px-4">
-        {/* Title */}
         <h1 className="text-2xl font-bold text-white text-center mb-8 tracking-widest-custom uppercase">
           Welcome to PiAds
         </h1>
 
-        {/* Error Alert */}
         {error && (
           <Alert variant="destructive" className="mb-6 bg-red-500/20 border-red-500/30 text-white">
             <AlertCircle className="h-4 w-4" />
@@ -93,7 +115,6 @@ export default function LoginPage() {
           </Alert>
         )}
 
-        {/* Pi Login Button */}
         <div className="mb-6">
           <Button
             onClick={handlePiLogin}
@@ -114,7 +135,6 @@ export default function LoginPage() {
           </Button>
         </div>
 
-        {/* Info */}
         <p className="text-center text-sm text-white/50">
           Sign in with your Pi Network account to continue.
           <br />
