@@ -1,7 +1,8 @@
 /**
- * Pi Network Authentication Utilities
- * Server-side verification with Platform API
+ * Pi Network authentication utilities.
+ * Pi Platform API is the source of truth for the user's identity.
  */
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 
 export interface PiVerifiedUser {
   uid: string
@@ -9,88 +10,64 @@ export interface PiVerifiedUser {
   accessToken: string
 }
 
-/**
- * Verify Pi access token with Platform API
- * Uses GET /v2/me with Bearer token
- */
 export async function verifyPiAccessToken(accessToken: string): Promise<PiVerifiedUser | null> {
   try {
-    const apiUrl = process.env.PI_API_URL || "https://api.minepi.com"
-    
+    const apiUrl = (process.env.PI_API_URL || "https://api.minepi.com").replace(/\/$/, "")
     const response = await fetch(`${apiUrl}/v2/me`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+      cache: "no-store",
     })
-
     if (!response.ok) {
       console.error("[Pi Auth] Token verification failed:", response.status)
       return null
     }
-
     const data = await response.json()
-    
-    if (!data.uid) {
-      console.error("[Pi Auth] Invalid response from Pi API")
+    if (typeof data?.uid !== "string" || !data.uid || typeof data?.username !== "string" || !data.username) {
+      console.error("[Pi Auth] Pi API returned an incomplete identity")
       return null
     }
-
-    return {
-      uid: data.uid,
-      username: data.username || "",
-      accessToken,
-    }
+    return { uid: data.uid, username: data.username, accessToken }
   } catch (error) {
     console.error("[Pi Auth] Verification error:", error)
     return null
   }
 }
 
-/**
- * Create a secure session token for the user
- */
-export function createSessionToken(piUid: string): string {
-  const crypto = require("crypto")
-  const timestamp = Date.now().toString()
-  const random = crypto.randomBytes(16).toString("hex")
-  const data = `${piUid}:${timestamp}:${random}`
-  const secret = process.env.SESSION_SECRET || "piads-dev-secret-change-in-production"
-  const signature = crypto.createHmac("sha256", secret).update(data).digest("hex")
-  return `${Buffer.from(data).toString("base64url")}.${signature}`
+function getSessionSecret(): string {
+  const configured = process.env.SESSION_SECRET
+  if (configured && configured.length >= 32) return configured
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET must be configured with at least 32 characters in production.")
+  }
+  return configured || "piads-local-development-secret-only"
 }
 
-/**
- * Verify a session token
- */
+export function createSessionToken(piUid: string): string {
+  const timestamp = Date.now().toString()
+  const random = randomBytes(16).toString("hex")
+  const data = `${piUid}:${timestamp}:${random}`
+  const encoded = Buffer.from(data).toString("base64url")
+  const signature = createHmac("sha256", getSessionSecret()).update(encoded).digest("hex")
+  return `${encoded}.${signature}`
+}
+
 export function verifySessionToken(token: string): { piUid: string; valid: boolean } {
   try {
-    const crypto = require("crypto")
-    const [encodedData, signature] = token.split(".")
-    
-    if (!encodedData || !signature) {
+    const [encoded, signature] = token.split(".")
+    if (!encoded || !signature || !/^[a-f0-9]{64}$/i.test(signature)) return { piUid: "", valid: false }
+    const expected = createHmac("sha256", getSessionSecret()).update(encoded).digest("hex")
+    const actualBuffer = Buffer.from(signature, "hex")
+    const expectedBuffer = Buffer.from(expected, "hex")
+    if (actualBuffer.length !== expectedBuffer.length || !timingSafeEqual(actualBuffer, expectedBuffer)) {
       return { piUid: "", valid: false }
     }
-
-    const data = Buffer.from(encodedData, "base64url").toString()
-    const secret = process.env.SESSION_SECRET || "piads-dev-secret-change-in-production"
-    const expectedSignature = crypto.createHmac("sha256", secret).update(data).digest("hex")
-    
-    if (signature !== expectedSignature) {
-      return { piUid: "", valid: false }
-    }
-
+    const data = Buffer.from(encoded, "base64url").toString("utf8")
     const [piUid, timestamp] = data.split(":")
-    
-    // Check if session is older than 7 days
-    const sessionAge = Date.now() - parseInt(timestamp)
-    const maxAge = 7 * 24 * 60 * 60 * 1000 // 7 days
-    
-    if (sessionAge > maxAge) {
-      return { piUid: "", valid: false }
-    }
-
+    const createdAt = Number(timestamp)
+    const age = Date.now() - createdAt
+    const maxAge = 7 * 24 * 60 * 60 * 1000
+    if (!piUid || !Number.isFinite(createdAt) || age < 0 || age > maxAge) return { piUid: "", valid: false }
     return { piUid, valid: true }
   } catch (error) {
     console.error("[Pi Auth] Session verification error:", error)
