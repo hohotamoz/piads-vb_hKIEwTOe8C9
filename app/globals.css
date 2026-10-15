@@ -393,3 +393,197 @@ img {
 .input-dark-theme {
   @apply bg-[#2D2A5E]/50 border-transparent text-white placeholder:text-white/50 focus:border-amber-400 focus:ring-amber-400/20;
 }
+
+/* -------------------------------------------------------------------------- */
+/* PiAds Premium Dark Luxury UI system — scoped away from the login screen.   */
+/* Keep this layer presentation-only: no component behavior or data changes.   */
+/* -------------------------------------------------------------------------- */
+.piads-premium-shell {
+  --background: 230 32% 7%;
+  --foreground: 225 25% 94%;
+  --card: 230 27% 10%;
+  --card-foreground: 225 25% 94%;
+  --popover: 230 27% 10%;
+  --popover-foreground: 225 25% 94%;
+  --primary: 258 84% 68%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 230 22% 15%;
+  --secondary-foreground: 225 25% 94%;
+  --muted: 230 22% 14%;
+  --muted-foreground: 224 13% 66%;
+  --accent: 43 88% 62%;
+  --accent-foreground: 230 32% 8%;
+  --destructive: 0 68% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 228 20% 19%;
+  --input: 228 20% 19%;
+  --ring: 258 84% 68%;
+  color: hsl(var(--foreground));
+  background:
+    radial-gradient(ellipse at 12% -8%, rgba(124, 58, 237, .16), transparent 38rem),
+    radial-gradient(ellipse at 100% 12%, rgba(217, 170, 77, .06), transparent 32rem),
+    hsl(var(--background));
+  min-height: 100vh;
+  min-height: 100dvh;
+  isolation: isolate;
+  color-scheme: dark;
+}
+
+.piads-premium-shell :where(h1, h2, h3, h4, h5, h6) {
+  color: inherit;
+  letter-spacing: -.025em;
+}
+
+.piads-premium-shell :where(p, label, small) {
+  text-wrap: pretty;
+}
+
+.piads-premium-shell :where(.bg-background, .bg-white, .bg-slate-50, .bg-slate-100, .bg-gray-50, .bg-gray-100, .bg-zinc-50, .bg-neutral-50) {
+  background-color: hsl(var(--background)) !important;
+}
+
+.piads-premium-shell :where(.bg-card, .bg-popover, .bg-secondary, .bg-muted, .bg-slate-800, .bg-slate-900, .bg-gray-800, .bg-gray-900, .bg-zinc-800, .bg-zinc-900) {
+  background-color: hsl(var(--card)) !important;
+}
+
+.piads-premium-shell :where(.text-foreground, .text-slate-900, .text-slate-800, .text-gray-900, .text-gray-800, .text-zinc-900, .text-neutral-900) {
+  color: hsl(var(--foreground)) !important;
+}
+
+.piads-premium-shell :where(.text-muted-foreground, .text-slate-600, .text-slate-500, .text-gray-600, .text-gray-500, .text-zinc-600, .text-zinc-500, .text-neutral-600) {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.piads-premium-shell :where(.border, .border-border, .border-slate-100, .border-slate-200, .border-gray-100, .border-gray-200, .border-zinc-200) {
+  border-color: hsl(var(--border)) !important;
+}
+
+.piads-premium-shell :where(input, textarea, select, [role="combobox"]) {
+  background-color: rgba(13, 16, 29, .78);
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.piads-premium-shell :where(input, textarea, select)::placeholder {
+  color: hsl(var(--muted-foreground));
+  opacity: .8;
+}
+
+.piads-premium-shell :where(button, a, input, textarea, select, [role="button"]) {
+  transition:
+    color .18s ease,
+    background-color .18s ease,
+    border-color .18s ease,
+    box-shadow .18s ease,
+    transform .18s ease;
+}
+
+.piads-premium-shell :where(button, [role="button"]):focus-visible,
+.piads-premium-shell :where(a, input, textarea, select):focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 3px;
+}
+
+.piads-premium-shell :where(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+  border-color: hsl(var(--border));
+}
+
+.piads-premium-shell :where(.shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .20);
+}
+
+.piads-premium-shell :where(.bg-amber-400, .bg-amber-500, .bg-yellow-400, .bg-yellow-500) {
+  color: #171321 !important;
+  box-shadow: 0 8px 24px rgba(245, 190, 78, .12);
+}
+
+.piads-premium-shell :where(.bg-emerald-600, .bg-green-600, .bg-teal-600) {
+  background-color: #7554d8 !important;
+}
+
+.piads-premium-shell :where(.hover\\:bg-amber-500:hover, .hover\\:bg-yellow-500:hover) {
+  filter: brightness(1.06);
+}
+
+.piads-premium-shell :where(.card-hover, [data-slot="card"]) {
+  border: 1px solid hsl(var(--border));
+  background-image: linear-gradient(145deg, rgba(255,255,255,.025), transparent 62%);
+}
+
+.piads-premium-shell :where(.card-hover:hover, [data-slot="card"]:hover) {
+  border-color: rgba(167, 139, 250, .38);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, .24), 0 0 0 1px rgba(139, 92, 246, .05);
+}
+
+.piads-premium-shell :where(table) {
+  border-color: hsl(var(--border));
+}
+
+.piads-premium-shell :where(th) {
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+}
+
+.piads-premium-shell :where(hr, [role="separator"]) {
+  border-color: hsl(var(--border));
+  background-color: hsl(var(--border));
+}
+
+.piads-premium-shell :where(.bg-gradient-to-r, .bg-gradient-to-br, .bg-gradient-to-b) {
+  background-blend-mode: screen;
+}
+
+.piads-premium-shell :where(.bg-slate-50, .bg-slate-100, .bg-gray-50, .bg-gray-100) {
+  color: hsl(var(--foreground));
+}
+
+.piads-premium-shell :where(.text-emerald-600, .text-green-600, .text-teal-600) {
+  color: #b5a0ff !important;
+}
+
+.piads-premium-shell :where(.text-amber-600, .text-yellow-600, .text-orange-600) {
+  color: #f1c96b !important;
+}
+
+.piads-premium-shell :where(.bg-red-50, .bg-rose-50) {
+  background-color: rgba(127, 29, 29, .18) !important;
+}
+
+.piads-premium-shell :where(.bg-green-50, .bg-emerald-50, .bg-teal-50) {
+  background-color: rgba(16, 185, 129, .10) !important;
+}
+
+.piads-premium-shell :where(.bg-blue-50, .bg-indigo-50, .bg-violet-50, .bg-purple-50) {
+  background-color: rgba(139, 92, 246, .11) !important;
+}
+
+.piads-premium-shell :where(.text-red-900, .text-red-800, .text-rose-900, .text-rose-800) {
+  color: #fca5a5 !important;
+}
+
+.piads-premium-shell :where(.text-green-900, .text-green-800, .text-emerald-900, .text-emerald-800) {
+  color: #a7f3d0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piads-premium-shell *,
+  .piads-premium-shell *::before,
+  .piads-premium-shell *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .piads-premium-shell {
+    background:
+      radial-gradient(ellipse at 10% -5%, rgba(124, 58, 237, .13), transparent 24rem),
+      hsl(var(--background));
+  }
+
+  .piads-premium-shell :where(.container) {
+    max-width: 100%;
+  }
+}
