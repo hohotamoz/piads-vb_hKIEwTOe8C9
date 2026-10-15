@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AuthLayout } from "@/components/auth-layout"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { isPiSandboxMode } from "@/lib/system-config"
+import { useAuth } from "@/components/auth-provider"
 
 declare global {
   interface Window {
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get("redirect") || "/"
+  const { refreshSession } = useAuth()
 
   useEffect(() => {
     if (typeof window === "undefined" || window.Pi) return
@@ -71,6 +73,18 @@ export default function LoginPage() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || "Pi login failed")
 
+      // Confirm the server accepted the session cookie before navigating to protected pages.
+      const sessionResponse = await fetch("/api/auth/session", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      })
+      const sessionData = await sessionResponse.json()
+      if (!sessionResponse.ok || sessionData.authenticated !== true || !sessionData.user) {
+        throw new Error("Pi sign-in succeeded, but PiAds could not confirm your app session. Please try again; if this repeats, check the Vercel logs and Supabase profile.")
+      }
+
+      await refreshSession()
       window.dispatchEvent(new Event("piads-auth-changed"))
       router.push(redirectUrl)
       router.refresh()
