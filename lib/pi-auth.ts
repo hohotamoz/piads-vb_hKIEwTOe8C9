@@ -2,7 +2,6 @@
  * Pi Network authentication utilities.
  * Pi Platform API is the source of truth for the user's identity.
  */
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto"
 
 export interface PiVerifiedUser {
   uid: string
@@ -44,11 +43,12 @@ function getSessionSecret(): string {
 }
 
 export function createSessionToken(piUid: string): string {
+  const crypto = require("crypto")
   const timestamp = Date.now().toString()
-  const random = randomBytes(16).toString("hex")
+  const random = crypto.randomBytes(16).toString("hex")
   const data = `${piUid}:${timestamp}:${random}`
   const encoded = Buffer.from(data).toString("base64url")
-  const signature = createHmac("sha256", getSessionSecret()).update(encoded).digest("hex")
+  const signature = crypto.createHmac("sha256", getSessionSecret()).update(encoded).digest("hex")
   return `${encoded}.${signature}`
 }
 
@@ -56,10 +56,11 @@ export function verifySessionToken(token: string): { piUid: string; valid: boole
   try {
     const [encoded, signature] = token.split(".")
     if (!encoded || !signature || !/^[a-f0-9]{64}$/i.test(signature)) return { piUid: "", valid: false }
-    const expected = createHmac("sha256", getSessionSecret()).update(encoded).digest("hex")
+    const crypto = require("crypto")
+    const expected = crypto.createHmac("sha256", getSessionSecret()).update(encoded).digest("hex")
     const actualBuffer = Buffer.from(signature, "hex")
     const expectedBuffer = Buffer.from(expected, "hex")
-    if (actualBuffer.length !== expectedBuffer.length || !timingSafeEqual(actualBuffer, expectedBuffer)) {
+    if (actualBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(actualBuffer, expectedBuffer)) {
       return { piUid: "", valid: false }
     }
     const data = Buffer.from(encoded, "base64url").toString("utf8")
