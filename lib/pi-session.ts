@@ -1,81 +1,79 @@
 /**
- * Pi Network Session Management
- * Server-side session handling with secure cookies
+ * Pi Network session management.
+ * The cookie contains only a signed Pi UID, never the Pi access token.
  */
-
 import { cookies } from "next/headers"
 import { createSessionToken, verifySessionToken } from "./pi-auth"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
 const SESSION_COOKIE_NAME = "piads_session"
-const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days
+const SESSION_DURATION_SECONDS = 7 * 24 * 60 * 60
 
 export interface SessionData {
+  id: string
   piUid: string
   username: string
-  accessToken: string
-  createdAt: number
+  email: string
+  name: string
+  role: string
+  avatar: string | null
+  verified: boolean
+  stats: Record<string, unknown>
+  createdAt: string
 }
 
-/**
- * Create a new session for a Pi user
- */
-export async function createSession(piUid: string, username: string, accessToken: string): Promise<string> {
-  const sessionData: SessionData = {
-    piUid,
-    username,
-    accessToken,
-    createdAt: Date.now(),
-  }
-
+export async function createSession(piUid: string, _username: string): Promise<string> {
   const token = createSessionToken(piUid)
-  
   const cookieStore = await cookies()
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: SESSION_DURATION / 1000,
+    maxAge: SESSION_DURATION_SECONDS,
     path: "/",
   })
-
   return token
 }
 
-/**
- * Get the current session from cookies
- */
 export async function getSession(): Promise<SessionData | null> {
   const cookieStore = await cookies()
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value
-
   if (!token) return null
 
   const { piUid, valid } = verifySessionToken(token)
-  
-  if (!valid) return null
+  if (!valid || !piUid) return null
 
-  // Note: We don't store accessToken in the cookie for security
-  // The session is validated by the signature
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("id, pi_uid, username, email, name, role, avatar, verified, stats, created_at")
+    .eq("pi_uid", piUid)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[Pi Session] Profile lookup failed:", error.message)
+    return null
+  }
+  if (!profile) return null
+
   return {
+    id: profile.id,
     piUid,
-    username: "", // Will be populated from user data if needed
-    accessToken: "", // Not stored in session for security
-    createdAt: Date.now(),
+    username: profile.username || "",
+    email: profile.email || "",
+    name: profile.name || profile.username || "Pi Pioneer",
+    role: profile.role || "user",
+    avatar: profile.avatar || null,
+    verified: profile.verified ?? true,
+    stats: profile.stats || {},
+    createdAt: profile.created_at || new Date().toISOString(),
   }
 }
 
-/**
- * Destroy the current session
- */
 export async function destroySession(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.delete(SESSION_COOKIE_NAME)
 }
 
-/**
- * Check if user is authenticated
- */
 export async function isAuthenticated(): Promise<boolean> {
-  const session = await getSession()
-  return session !== null
+  return (await getSession()) !== null
 }
