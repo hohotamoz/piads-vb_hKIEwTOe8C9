@@ -39,7 +39,6 @@ export async function POST(req: Request) {
         piUid: verifiedUser.uid,
         username: profile.username,
         name: profile.name || profile.username,
-        email: profile.email,
         role: profile.role || "user",
         avatar: profile.avatar || null,
         verified: profile.verified ?? true,
