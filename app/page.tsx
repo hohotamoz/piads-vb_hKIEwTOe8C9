@@ -13,7 +13,6 @@ import Link from "next/link"
 import { getAds } from "@/lib/database"
 import { trackSearch } from "@/lib/user-behavior"
 import { getUnreadCount } from "@/lib/notifications"
-import { AuthSuccessHandler } from "@/components/auth-success-handler"
 import { realtimeMessaging } from "@/lib/realtime-messages"
 import { initializeAdsStorage, getAllAds } from "@/lib/ads-storage"
 
@@ -144,7 +143,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <AuthSuccessHandler />
 
       {/* Header */}
       <header className="bg-gradient-to-r from-primary to-[#312E81] sticky top-0 z-40 shadow-lg">
