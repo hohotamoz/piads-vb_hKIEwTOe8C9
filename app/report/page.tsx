@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -29,8 +29,11 @@ export default function ReportPage() {
   const { user } = useAuth()
   const router = useRouter()
 
+  useEffect(() => {
+    if (!user) router.replace("/auth/login")
+  }, [user, router])
+
   if (!user) {
-    router.push("/auth/login")
     return null
   }
 
