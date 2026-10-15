@@ -81,7 +81,7 @@ export default function LoginPage() {
       })
       const sessionData = await sessionResponse.json()
       if (!sessionResponse.ok || sessionData.authenticated !== true || !sessionData.user) {
-        throw new Error("Pi sign-in succeeded, but PiAds could not confirm your app session. Please try again; if this repeats, check the Vercel logs and Supabase profile.")
+        throw new Error(`Pi sign-in succeeded, but PiAds could not confirm your app session (reason: ${typeof sessionData.reason === "string" ? sessionData.reason : "unknown"}). Please share this reason so the server-side issue can be identified.`)
       }
 
       await refreshSession()
