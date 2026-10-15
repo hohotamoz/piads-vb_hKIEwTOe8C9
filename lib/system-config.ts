@@ -1,12 +1,14 @@
-// Pi Network Configuration for Testnet
+// Pi Network Configuration. Sandbox mode is enabled only when the Pi Sandbox
+// launches the app with ?sandbox=true; ordinary production visits remain unchanged.
 
 export const PI_NETWORK_CONFIG = {
   SDK_URL: "https://sdk.minepi.com/pi-sdk.js",
-  // IMPORTANT: Testnet is NOT Sandbox
-  // sandbox=false for Testnet environment
-  // sandbox=true only for Sandbox environment (sandbox.minepi.com)
-  SANDBOX: false,
 } as const
+
+export function isPiSandboxMode(): boolean {
+  if (typeof window === "undefined") return false
+  return new URLSearchParams(window.location.search).get("sandbox") === "true"
+}
 
 export const BACKEND_CONFIG = {
   BASE_URL: "",
