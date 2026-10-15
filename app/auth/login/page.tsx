@@ -11,17 +11,11 @@ import { isPiSandboxMode } from "@/lib/system-config"
 declare global {
   interface Window {
     Pi?: {
-      init: (config: { version: string; sandbox?: boolean }) => void
+      init: (config: { version: string; sandbox?: boolean }) => void | Promise<void>
       authenticate: (
         scopes: string[],
         onIncompletePaymentFound?: (payment: any) => void,
-      ) => Promise<{
-        accessToken: string
-        user: {
-          uid: string
-          username: string
-        }
-      }>
+      ) => Promise<{ accessToken: string; user: { uid: string; username: string } }>
     }
   }
 }
@@ -34,23 +28,17 @@ export default function LoginPage() {
   const redirectUrl = searchParams.get("redirect") || "/"
 
   useEffect(() => {
-    // Loading Pi SDK here ensures the same code path works in the Sandbox launcher.
     if (typeof window === "undefined" || window.Pi) return
-
     const script = document.createElement("script")
     script.src = "https://sdk.minepi.com/pi-sdk.js"
     script.async = true
-    script.onerror = () => setError("Failed to load Pi SDK")
+    script.onerror = () => setError("Failed to load Pi SDK. Please reopen PiAds in Pi Browser.")
     document.head.appendChild(script)
-    return () => {
-      // Do not remove a shared SDK script; other app components may use it.
-    }
   }, [])
 
   const handlePiLogin = async () => {
     setIsLoading(true)
     setError("")
-
     try {
       if (typeof window.Pi === "undefined") {
         await new Promise<void>((resolve, reject) => {
@@ -67,35 +55,28 @@ export default function LoginPage() {
           document.head.appendChild(script)
         })
       }
+      if (!window.Pi) throw new Error("Pi SDK not available. Open PiAds in Pi Browser.")
 
-      if (!window.Pi) throw new Error("Pi SDK not available")
-
-      window.Pi.init({ version: "2.0", sandbox: isPiSandboxMode() })
-
-      const scopes = ["username", "payments"]
-      const onIncompletePaymentFound = (payment: any) => {
-        console.log("[Pi Login] Incomplete payment found:", payment)
-      }
-
-      const authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound)
+      await window.Pi.init({ version: "2.0", sandbox: isPiSandboxMode() })
+      const authResult = await window.Pi.authenticate(["username", "payments"], (payment: any) => {
+        console.info("[Pi Login] Incomplete payment:", payment?.identifier)
+      })
 
       const response = await fetch("/api/auth/pi-login", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(authResult),
       })
-
       const data = await response.json()
+      if (!response.ok) throw new Error(data.error || "Pi login failed")
 
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed")
-      }
-
+      window.dispatchEvent(new Event("piads-auth-changed"))
       router.push(redirectUrl)
       router.refresh()
-    } catch (err: any) {
-      console.error("Pi Login Error:", err)
-      setError(err?.message || "Could not authenticate with Pi Network")
+    } catch (err) {
+      console.error("[Pi Login] Failed:", err)
+      setError(err instanceof Error ? err.message : "Could not authenticate with Pi Network")
     } finally {
       setIsLoading(false)
     }
@@ -104,42 +85,23 @@ export default function LoginPage() {
   return (
     <AuthLayout variant="dark">
       <div className="w-full max-w-sm animate-slide-up mx-auto px-4">
-        <h1 className="text-2xl font-bold text-white text-center mb-8 tracking-widest-custom uppercase">
-          Welcome to PiAds
-        </h1>
-
+        <h1 className="text-2xl font-bold text-white text-center mb-8 tracking-widest-custom uppercase">Welcome to PiAds</h1>
         {error && (
           <Alert variant="destructive" className="mb-6 bg-red-500/20 border-red-500/30 text-white">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-
         <div className="mb-6">
-          <Button
-            onClick={handlePiLogin}
-            disabled={isLoading}
-            className="w-full h-14 bg-gradient-to-r from-[#FBC02D] to-[#F57F17] hover:from-[#FBC02D]/90 hover:to-[#F57F17]/90 text-black font-bold rounded-full shadow-lg transition-all"
-          >
+          <Button onClick={handlePiLogin} disabled={isLoading} className="w-full h-14 bg-gradient-to-r from-[#FBC02D] to-[#F57F17] hover:from-[#FBC02D]/90 hover:to-[#F57F17]/90 text-black font-bold rounded-full shadow-lg transition-all">
             {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Authenticating...
-              </>
+              <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Authenticating...</>
             ) : (
-              <>
-                <span className="text-lg mr-2 font-black">π</span>
-                Login with Pi Network
-              </>
+              <><span className="text-lg mr-2 font-black">π</span>Login with Pi Network</>
             )}
           </Button>
         </div>
-
-        <p className="text-center text-sm text-white/50">
-          Sign in with your Pi Network account to continue.
-          <br />
-          No email or password required.
-        </p>
+        <p className="text-center text-sm text-white/50">Sign in with your Pi Network account to continue.<br />No email or password required.</p>
       </div>
     </AuthLayout>
   )
