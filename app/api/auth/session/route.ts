@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server"
-import { getSession } from "@/lib/pi-session"
+import { getSessionWithStatus } from "@/lib/pi-session"
 
 export const runtime = "nodejs"
 
 export async function GET() {
   try {
-    const session = await getSession()
+    const { session, reason } = await getSessionWithStatus()
     if (!session) {
-      return NextResponse.json({ authenticated: false, user: null })
+      // Safe diagnostic only: never expose cookies, tokens, UIDs or database errors.
+      return NextResponse.json(
+        { authenticated: false, user: null, reason },
+        { status: reason === "profile_lookup_error" ? 503 : 200, headers: { "Cache-Control": "no-store" } },
+      )
     }
 
     return NextResponse.json({
