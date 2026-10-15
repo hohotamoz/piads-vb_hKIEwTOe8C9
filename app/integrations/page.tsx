@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -52,8 +52,11 @@ export default function IntegrationsPage() {
   const [connecting, setConnecting] = useState(false)
   const [integrations, setIntegrations] = useState(availableIntegrations)
 
+  useEffect(() => {
+    if (!user) router.replace("/auth/login")
+  }, [user, router])
+
   if (!user) {
-    router.push("/auth/login")
     return null
   }
 
