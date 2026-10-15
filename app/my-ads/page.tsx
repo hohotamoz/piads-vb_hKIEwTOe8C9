@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -39,8 +39,11 @@ export default function MyAdsPage() {
     }
   }
 
+  useEffect(() => {
+    if (!user) router.replace("/auth/login")
+  }, [user, router])
+
   if (!user) {
-    router.push("/auth/login")
     return null
   }
 
