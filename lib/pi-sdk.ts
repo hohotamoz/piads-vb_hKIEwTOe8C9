@@ -1,3 +1,5 @@
+import { isPiSandboxMode } from "./system-config"
+
 declare global {
   interface Window {
     Pi?: {
@@ -58,9 +60,9 @@ export interface PiPaymentResult {
 class PiSDKService {
   private initialized = false
   private user: PiUser | null = null
-  private sandbox = false // Default to false for Testnet (not sandbox)
+  private sandbox = false
 
-  async initialize(sandbox = false): Promise<void> {
+  async initialize(sandbox = isPiSandboxMode()): Promise<void> {
     if (this.initialized) return
 
     this.sandbox = sandbox
