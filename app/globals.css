@@ -587,3 +587,29 @@ img {
     max-width: 100%;
   }
 }
+
+
+.piads-premium-shell :where(button, [role="button"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.piads-premium-shell :where(button:not(:disabled), [role="button"]:not([aria-disabled="true"])):hover {
+  filter: brightness(1.07);
+}
+
+.piads-premium-shell :where(button:not(:disabled), [role="button"]:not([aria-disabled="true"])):active {
+  transform: translateY(1px) scale(.99);
+}
+
+.piads-premium-shell :where(button:disabled, [role="button"][aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.piads-premium-shell :where(.bg-primary) {
+  box-shadow: 0 8px 22px rgba(139, 92, 246, .18);
+}
+
+.piads-premium-shell :where(.bg-primary:hover) {
+  box-shadow: 0 10px 26px rgba(139, 92, 246, .26);
+}
