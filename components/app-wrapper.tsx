@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/sonner"
 
 export function AppWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const isLoginPage = pathname === "/auth/login"
+  const isAuthPage = pathname === "/auth/login" || pathname?.startsWith("/auth/")
 
   return (
     <PiAuthProvider>
