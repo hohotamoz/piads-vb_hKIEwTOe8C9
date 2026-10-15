@@ -94,6 +94,70 @@ export const getSubscriptionPlans = (): PricingPlan[] => {
   return subscriptionPlansData
 }
 
+/**
+ * Update a promotion pricing plan in the in-memory catalog.
+ * Note: this does not persist changes across server restarts or deployments.
+ * Persist pricing changes in a database before relying on this for production.
+ */
+export const updatePricingPlan = (planId: string, updates: Partial<PricingPlan>): boolean => {
+  const index = pricingPlansData.findIndex((plan) => plan.id === planId)
+  if (index === -1) return false
+
+  const current = pricingPlansData[index]
+  pricingPlansData[index] = {
+    ...current,
+    ...updates,
+    id: current.id,
+    price: typeof updates.price === "number" && Number.isFinite(updates.price) && updates.price >= 0
+      ? updates.price
+      : current.price,
+    duration: typeof updates.duration === "number" && Number.isFinite(updates.duration) && updates.duration > 0
+      ? updates.duration
+      : current.duration,
+    name: typeof updates.name === "string" && updates.name.trim()
+      ? updates.name.trim()
+      : current.name,
+  }
+  return true
+}
+
+/**
+ * Update a subscription plan in the in-memory catalog.
+ * Note: this does not persist changes across server restarts or deployments.
+ */
+export const updateSubscriptionPlan = (planId: string, updates: Partial<PricingPlan>): boolean => {
+  const index = subscriptionPlansData.findIndex((plan) => plan.id === planId)
+  if (index === -1) return false
+
+  const current = subscriptionPlansData[index]
+  subscriptionPlansData[index] = {
+    ...current,
+    ...updates,
+    id: current.id,
+    price: typeof updates.price === "number" && Number.isFinite(updates.price) && updates.price >= 0
+      ? updates.price
+      : current.price,
+    duration: typeof updates.duration === "number" && Number.isFinite(updates.duration) && updates.duration > 0
+      ? updates.duration
+      : current.duration,
+    name: typeof updates.name === "string" && updates.name.trim()
+      ? updates.name.trim()
+      : current.name,
+  }
+  return true
+}
+
+/**
+ * Delete a promotion pricing plan from the in-memory catalog.
+ * Subscription plans are intentionally not removed by this function.
+ */
+export const deletePricingPlan = (planId: string): boolean => {
+  const index = pricingPlansData.findIndex((plan) => plan.id === planId)
+  if (index === -1) return false
+  pricingPlansData.splice(index, 1)
+  return true
+}
+
 const piPaymentService = {
   /**
    * Create a real Pi payment using the official SDK flow:
