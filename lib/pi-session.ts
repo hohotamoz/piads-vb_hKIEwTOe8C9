@@ -28,7 +28,7 @@ export async function createSession(piUid: string, _username: string): Promise<s
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: SESSION_DURATION_SECONDS,
     path: "/",
   })
