@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { verifyPiAccessToken } from "@/lib/pi-auth"
-import { createSession } from "@/lib/pi-session"
+import { createSessionToken } from "@/lib/pi-auth"
 import { ensurePiProfile } from "@/lib/pi-user"
 
 export const runtime = "nodejs"
@@ -29,9 +29,8 @@ export async function POST(req: Request) {
 
     // This is an app session cookie, not a second login system. Pi remains the
     // sole user-facing identity provider; the access token is never stored in a cookie.
-    await createSession(verifiedUser.uid, verifiedUser.username)
-
-    return NextResponse.json({
+    const sessionToken = createSessionToken(verifiedUser.uid)
+    const response = NextResponse.json({
       success: true,
       authenticated: true,
       user: {
@@ -45,7 +44,20 @@ export async function POST(req: Request) {
         stats: profile.stats || {},
         createdAt: profile.created_at || new Date().toISOString(),
       },
+    }, {
+      headers: { "Cache-Control": "no-store" },
     })
+
+    // Set the cookie on the actual response object so the browser receives an
+    // explicit Set-Cookie header from this same-origin login response.
+    response.cookies.set("piads_session", sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
+    })
+    return response
   } catch (error) {
     console.error("[Pi Login] Failed:", error)
     const message = error instanceof Error ? error.message : "Pi login failed."
