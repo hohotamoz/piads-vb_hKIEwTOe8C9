@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     response.cookies.set("piads_session", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60,
       path: "/",
     })
