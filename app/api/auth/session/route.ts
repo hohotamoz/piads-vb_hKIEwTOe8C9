@@ -17,7 +17,6 @@ export async function GET() {
         piUid: session.piUid,
         username: session.username,
         name: session.name,
-        email: session.email,
         role: session.role,
         avatar: session.avatar,
         verified: session.verified,
