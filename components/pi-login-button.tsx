@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { isPiSandboxMode } from "@/lib/system-config"
 
 declare global {
   interface Window {
@@ -58,10 +59,9 @@ export function PiLoginButton() {
         throw new Error("Pi SDK not loaded")
       }
 
-      // Initialize Pi SDK for Testnet (sandbox=false)
-      window.Pi.init({ version: "2.0", sandbox: false })
+      // Use Sandbox mode only when the official Sandbox launcher passes ?sandbox=true.
+      window.Pi.init({ version: "2.0", sandbox: isPiSandboxMode() })
 
-      // Authenticate with Pi Network
       const scopes = ["username", "payments"]
       const onIncompletePaymentFound = (payment: any) => {
         console.log("Incomplete payment found", payment)
@@ -69,7 +69,6 @@ export function PiLoginButton() {
 
       const authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound)
 
-      // Send to backend for verification
       const response = await fetch("/api/auth/pi-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
