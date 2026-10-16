@@ -1,21 +1,15 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { usePathname } from "next/navigation"
 import { PiAuthProvider } from "@/contexts/pi-auth-context"
 import { AuthProvider } from "@/components/auth-provider"
 import { Toaster } from "@/components/ui/sonner"
 
 export function AppWrapper({ children }: { children: ReactNode }) {
-  const pathname = usePathname()
-  const isAuthPage = pathname === "/auth/login" || pathname?.startsWith("/auth/")
-
   return (
     <PiAuthProvider>
       <AuthProvider>
-        <div className={isLoginPage ? undefined : "piads-premium-shell"}>
-          {children}
-        </div>
+        {children}
         <Toaster position="top-center" richColors closeButton />
       </AuthProvider>
     </PiAuthProvider>
